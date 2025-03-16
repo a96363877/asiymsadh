@@ -617,6 +617,34 @@ export default function NotificationsPage() {
                         locale: ar,
                       })}
                   </div>
+                  <div className="flex justify-between mx-1">
+                <Button
+                  onClick={() => {
+                    handleApproval("approved", selectedNotification.id)
+                    setMessage(true)
+                    setTimeout(() => {
+                      setMessage(false)
+                    }, 3000)
+                  }}
+                  className="w-full m-3 bg-green-500"
+                >
+                  قبول
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleApproval("rejected", selectedNotification.id)
+                    setMessage(true)
+                    setTimeout(() => {
+                      setMessage(false)
+                    }, 3000)
+                  }}
+                  className="w-full m-3"
+                  variant="destructive"
+                >
+                  رفض
+                </Button>
+              </div>
+              <p className="text-red-500">{message ? "تم الارسال" : ""}</p>
                 </div>
 
                

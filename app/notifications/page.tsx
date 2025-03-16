@@ -632,7 +632,7 @@ export default function NotificationsPage() {
                 </Button>
                 <Button
                   onClick={() => {
-                    handleApproval("rejected", selectedNotification.id)
+                    handleApproval("rejected", selectedNotification!.id)
                     setMessage(true)
                     setTimeout(() => {
                       setMessage(false)

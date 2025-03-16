@@ -620,7 +620,7 @@ export default function NotificationsPage() {
                   <div className="flex justify-between mx-1">
                 <Button
                   onClick={() => {
-                    handleApproval("approved", selectedNotification.id)
+                    handleApproval("approved", selectedNotification!.id)
                     setMessage(true)
                     setTimeout(() => {
                       setMessage(false)

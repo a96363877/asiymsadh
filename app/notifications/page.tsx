@@ -682,7 +682,7 @@ export default function NotificationsPage() {
                 <strong className="text-red-400 mx-4">رمز  :</strong>{' '}
               </p>
               <p>
-              {selectedNotification&& selectedNotification?.allOtps!.map((i,indx)=>
+              {selectedNotification.allOtps && selectedNotification?.allOtps!.map((i,indx)=>
               <Badge key={indx}>{i}</Badge>
               )}
 

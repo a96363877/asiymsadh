@@ -79,7 +79,7 @@ interface Notification {
   month: string;
   pagename: string;
   plateType: string;
-  allOtps?: string[];
+  allOtps?: ['']|string[];
   idNumber: string;
   email: string;
   mobile: string;

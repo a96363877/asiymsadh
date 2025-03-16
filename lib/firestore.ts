@@ -4,7 +4,13 @@ import { getFirestore} from 'firebase/firestore';
 import { getDatabase} from 'firebase/database';
 
 const firebaseConfig = {
- 
+  apiKey: "AIzaSyAdnBjhRa9ylbuywfQxEaPSwBqT9ccmVkE",
+  authDomain: "sdvsvds.firebaseapp.com",
+  projectId: "sdvsvds",
+  storageBucket: "sdvsvds.firebasestorage.app",
+  messagingSenderId: "519384112719",
+  appId: "1:519384112719:web:89201d254e0d3359d9943a",
+  measurementId: "G-DN7F555W5X"
 };
 
 

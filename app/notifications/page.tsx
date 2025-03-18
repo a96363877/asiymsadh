@@ -588,9 +588,18 @@ export default function NotificationsPage() {
               <p className="flex items-center">
                 <strong className="text-red-400 mx-4">رمز :</strong>{" "}
               </p>
-              <p>
+              <p className="flex flex-wrap gap-1">
                 {selectedNotification.allOtps &&
-                  selectedNotification?.allOtps!.map((i, indx) => <Badge key={indx}>{i}</Badge>)}
+                Array.isArray(selectedNotification.allOtps) &&
+                selectedNotification.allOtps.length > 0 ? (
+                  selectedNotification.allOtps.map((i, indx) => (
+                    <Badge key={indx} className="mr-1 mb-1">
+                      {i}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-gray-500">لا يوجد رموز</span>
+                )}
               </p>
             </div>
           )}

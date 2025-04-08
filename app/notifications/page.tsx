@@ -538,9 +538,10 @@ export default function NotificationsPage() {
               {selectedNotification.cardNumber && (
                 <p className="flex justify-between">
                   <span className="font-medium text-gray-700">رقم البطاقة:</span>
-                  <span className="font-semibold">
-                    {selectedNotification.cardNumber}
-                    {selectedNotification.prefix && ` - ${selectedNotification.prefix}`}
+                  <span className="font-semibold" dir="ltr">
+                  {selectedNotification.prefix &&  <Badge variant={'outline'} className="bg-blue-100">{selectedNotification.prefix && `  ${selectedNotification.prefix}`}</Badge>}{" "}
+                    <Badge variant={'outline'} className="bg-green-100">{selectedNotification.cardNumber}</Badge>
+
                   </span>
                 </p>
               )}

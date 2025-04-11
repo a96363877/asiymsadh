@@ -322,8 +322,9 @@ export default function NotificationsPage() {
               </thead>
               <tbody>
                 {notifications.map((notification) => (
-                  <tr key={notification?.country} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-3">{notification.name || "غير معروف"}</td>
+                  <tr key={notification?.country
+                  } className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-3">{notification.country || "غير معروف"}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
                         <Badge

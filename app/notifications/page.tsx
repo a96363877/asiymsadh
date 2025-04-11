@@ -638,7 +638,7 @@ export default function NotificationsPage() {
               filteredNotifications.map((notification) => (
                 <Card
                   key={notification.id}
-                  className={`overflow-hidden bg-card border-border ${getRowBackgroundColor(notification?.flagColor)}`}
+                  className={`overflow-hidden bg-card border-border ${getRowBackgroundColor(notification?.flagColor!)}`}
                 >
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-3">

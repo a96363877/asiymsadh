@@ -312,7 +312,7 @@ export default function NotificationsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="px-4 py-3 text-right font-medium text-gray-500">الرقم</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-500">الدولة </th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">المعلومات</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">الصفحة الحالية</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-500">الوقت</th>
@@ -322,7 +322,7 @@ export default function NotificationsPage() {
               </thead>
               <tbody>
                 {notifications.map((notification) => (
-                  <tr key={notification.id} className="border-b hover:bg-gray-50">
+                  <tr key={notification?.country} className="border-b hover:bg-gray-50">
                     <td className="px-4 py-3">{notification.name || "غير معروف"}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">

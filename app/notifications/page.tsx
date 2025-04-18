@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { Trash2, Users, CreditCard, UserCheck, Filter, Flag } from "lucide-react"
+import { Trash2, Users, CreditCard, UserCheck, Flag, Bell, LogOut, BarChart3, Clock, Info, Layers } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ar } from "date-fns/locale"
 import { formatDistanceToNow } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { collection, doc, writeBatch, updateDoc, onSnapshot, query, orderBy } from "firebase/firestore"
 import { onAuthStateChanged, signOut } from "firebase/auth"
 import { onValue, ref } from "firebase/database"
@@ -18,6 +19,8 @@ import { db } from "@/lib/firestore"
 import { playNotificationSound } from "@/lib/actions"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ThemeToggle } from "@/components/theam"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 // Flag colors for row highlighting
 type FlagColor = "red" | "yellow" | "green" | null
@@ -102,8 +105,12 @@ function UserStatus({ userId }: { userId: string }) {
   }, [userId])
 
   return (
-    <Badge variant="default" className={`${status === "online" ? "bg-green-500" : "bg-red-500"}`}>
-      <span className="text-xs text-white">{status === "online" ? "متصل" : "غير متصل"}</span>
+    <Badge
+      variant="outline"
+      className={`${status === "online" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"} border-0`}
+    >
+      <span className={`mr-1.5 h-2 w-2 rounded-full ${status === "online" ? "bg-green-500" : "bg-red-500"}`} />
+      <span className="text-xs">{status === "online" ? "متصل" : "غير متصل"}</span>
     </Badge>
   )
 }
@@ -155,43 +162,78 @@ function FlagColorSelector({
       </PopoverTrigger>
       <PopoverContent className="w-auto p-2">
         <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800"
-            onClick={() => onColorChange(notificationId, "red")}
-          >
-            <Flag className="h-4 w-4 text-red-500 fill-red-500" />
-            <span className="sr-only">علم أحمر</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full bg-yellow-100 dark:bg-yellow-900 hover:bg-yellow-200 dark:hover:bg-yellow-800"
-            onClick={() => onColorChange(notificationId, "yellow")}
-          >
-            <Flag className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-            <span className="sr-only">علم أصفر</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800"
-            onClick={() => onColorChange(notificationId, "green")}
-          >
-            <Flag className="h-4 w-4 text-green-500 fill-green-500" />
-            <span className="sr-only">علم أخضر</span>
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800"
+                  onClick={() => onColorChange(notificationId, "red")}
+                >
+                  <Flag className="h-4 w-4 text-red-500 fill-red-500" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>علم أحمر</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full bg-yellow-100 dark:bg-yellow-900 hover:bg-yellow-200 dark:hover:bg-yellow-800"
+                  onClick={() => onColorChange(notificationId, "yellow")}
+                >
+                  <Flag className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>علم أصفر</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800"
+                  onClick={() => onColorChange(notificationId, "green")}
+                >
+                  <Flag className="h-4 w-4 text-green-500 fill-green-500" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>علم أخضر</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           {currentColor && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-              onClick={() => onColorChange(notificationId, null)}
-            >
-              <Flag className="h-4 w-4 text-gray-500" />
-              <span className="sr-only">إزالة العلم</span>
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    onClick={() => onColorChange(notificationId, null)}
+                  >
+                    <Flag className="h-4 w-4 text-gray-500" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>إزالة العلم</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
       </PopoverContent>
@@ -413,7 +455,10 @@ export default function NotificationsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-lg font-medium">جاري التحميل...</div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="text-lg font-medium">جاري التحميل...</div>
+        </div>
       </div>
     )
   }
@@ -423,358 +468,956 @@ export default function NotificationsPage() {
   const onlineCount = Object.values(onlineStatuses).filter(Boolean).length
 
   return (
-    <div dir="rtl" className="min-h-screen bg-background text-foreground p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold mb-4 sm:mb-0">لوحة الإشعارات</h1>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <ThemeToggle />
-            <Button
-              variant="destructive"
-              onClick={handleClearAll}
-              disabled={notifications.length === 0}
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              مسح جميع الإشعارات
-            </Button>
-            <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
-              تسجيل الخروج
-            </Button>
+    <div dir="rtl" className="min-h-screen bg-background text-foreground">
+      <div className="flex flex-col h-screen">
+        {/* Header */}
+        <header className="border-b border-border bg-card shadow-sm">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Bell className="h-6 w-6 text-primary" />
+              <h1 className="text-xl font-bold">لوحة الإشعارات</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={handleLogout}>
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>تسجيل الخروج</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
-        </div>
+        </header>
 
-        {/* Statistics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          {/* Online Users Card */}
-          <Card className="bg-card">
-            <CardContent className="p-6 flex items-center">
-              <div className="rounded-full bg-blue-100 dark:bg-blue-900 p-3 mr-4">
-                <UserCheck className="h-6 w-6 text-blue-600 dark:text-blue-300" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">المستخدمين المتصلين</p>
-                <p className="text-2xl font-bold">{onlineUsersCount}</p>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex-1 container mx-auto px-4 py-6 overflow-hidden flex flex-col">
+          {/* Statistics Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            {/* Online Users Card */}
+            <Card className="bg-card shadow-sm">
+              <CardContent className="p-6 flex items-center">
+                <div className="rounded-full bg-blue-100 dark:bg-blue-900 p-3 mr-4">
+                  <UserCheck className="h-6 w-6 text-blue-600 dark:text-blue-300" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">المستخدمين المتصلين</p>
+                  <p className="text-2xl font-bold">{onlineUsersCount}</p>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Total Visitors Card */}
-          <Card className="bg-card">
-            <CardContent className="p-6 flex items-center">
-              <div className="rounded-full bg-green-100 dark:bg-green-900 p-3 mr-4">
-                <Users className="h-6 w-6 text-green-600 dark:text-green-300" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">إجمالي الزوار</p>
-                <p className="text-2xl font-bold">{totalVisitors}</p>
-              </div>
-            </CardContent>
-          </Card>
+            {/* Total Visitors Card */}
+            <Card className="bg-card shadow-sm">
+              <CardContent className="p-6 flex items-center">
+                <div className="rounded-full bg-green-100 dark:bg-green-900 p-3 mr-4">
+                  <Users className="h-6 w-6 text-green-600 dark:text-green-300" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">إجمالي الزوار</p>
+                  <p className="text-2xl font-bold">{totalVisitors}</p>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Card Submissions Card */}
-          <Card className="bg-card">
-            <CardContent className="p-6 flex items-center">
-              <div className="rounded-full bg-purple-100 dark:bg-purple-900 p-3 mr-4">
-                <CreditCard className="h-6 w-6 text-purple-600 dark:text-purple-300" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">معلومات البطاقات المقدمة</p>
-                <p className="text-2xl font-bold">{cardSubmissions}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            {/* Card Submissions Card */}
+            <Card className="bg-card shadow-sm">
+              <CardContent className="p-6 flex items-center">
+                <div className="rounded-full bg-purple-100 dark:bg-purple-900 p-3 mr-4">
+                  <CreditCard className="h-6 w-6 text-purple-600 dark:text-purple-300" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">معلومات البطاقات المقدمة</p>
+                  <p className="text-2xl font-bold">{cardSubmissions}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Filter Section */}
-        <Card className="mb-4 bg-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Filter className="h-5 w-5 text-muted-foreground" />
-              <h3 className="font-medium">تصفية النتائج</h3>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              <Button
-                variant={filterType === "all" ? "default" : "outline"}
-                onClick={() => setFilterType("all")}
-                className="flex-1 sm:flex-none"
-              >
-                عرض الكل ({notifications.length})
-              </Button>
-              <Button
-                variant={filterType === "card" ? "default" : "outline"}
-                onClick={() => setFilterType("card")}
-                className="flex-1 sm:flex-none"
-              >
-                <CreditCard className="h-4 w-4 ml-1" />
-                البطاقات ({cardCount})
-              </Button>
-              <Button
-                variant={filterType === "online" ? "default" : "outline"}
-                onClick={() => setFilterType("online")}
-                className="flex-1 sm:flex-none"
-              >
-                <UserCheck className="h-4 w-4 ml-1" />
-                المتصلين ({onlineCount})
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card">
-          {/* Desktop Table View - Hidden on Mobile */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">الدولة </th>
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">المعلومات</th>
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">OTP</th>
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">الوقت</th>
-                  <th className="px-4 py-3 text-center font-medium text-muted-foreground">الحالة</th>
-                  <th className="px-4 py-3 text-center font-medium text-muted-foreground">العلم</th>
-                  <th className="px-4 py-3 text-center font-medium text-muted-foreground">الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredNotifications.map((notification) => (
-                  <tr
-                    key={notification.id}
-                    className={`border-b border-border ${getRowBackgroundColor(notification?.flagColor!)} transition-colors`}
+          {/* Main Content */}
+          <Card className="flex-1 overflow-hidden shadow-sm">
+            <CardHeader className="px-6 py-4 border-b border-border bg-muted/40">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-lg">الإشعارات والبيانات</CardTitle>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="destructive"
+                    onClick={handleClearAll}
+                    disabled={notifications.length === 0}
+                    className="flex items-center gap-2"
+                    size="sm"
                   >
-                    <td className="px-4 py-3">{notification.country || "غير معروف"}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge
-                          variant={notification.name ? "default" : "destructive"}
-                          className="rounded-md cursor-pointer"
-                          onClick={() => handleInfoClick(notification, "personal")}
-                        >
-                          {notification.name ? "معلومات شخصية" : "لا يوجد معلومات"}
-                        </Badge>
-                        <Badge
-                          variant={notification.cardNumber ? "default" : "destructive"}
-                          className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500 dark:bg-green-600" : ""}`}
-                          onClick={() => handleInfoClick(notification, "card")}
-                        >
-                          {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
-                        </Badge>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">  {notification?.otp}</td>
-                    <td className="px-4 py-3">
-                      {notification.createdDate &&
-                        formatDistanceToNow(new Date(notification.createdDate), {
-                          addSuffix: true,
-                          locale: ar,
-                        })}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <UserStatus userId={notification.id} />
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <FlagColorSelector
-                        notificationId={notification.id}
-                        currentColor={notification.flagColor || null}
-                        onColorChange={handleFlagColorChange}
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex justify-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            handleApproval("approved", notification.id)
-                            setMessage(true)
-                            setTimeout(() => {
-                              setMessage(false)
-                            }, 3000)
-                          }}
-                          className="bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700"
-                        >
-                          قبول
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            handleApproval("rejected", notification.id)
-                            setMessage(true)
-                            setTimeout(() => {
-                              setMessage(false)
-                            }, 3000)
-                          }}
-                          className="bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700"
-                        >
-                          رفض
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(notification.id)}
-                          className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {filteredNotifications.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                      لا توجد إشعارات متطابقة مع الفلتر المحدد
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                    <Trash2 className="h-4 w-4" />
+                    مسح الكل
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
 
-          {/* Mobile Card View - Shown only on Mobile */}
-          <div className="md:hidden space-y-4 p-4">
-            {filteredNotifications.length > 0 ? (
-              filteredNotifications.map((notification) => (
-                <Card
-                  key={notification.id}
-                  className={`overflow-hidden bg-card border-border ${getRowBackgroundColor(notification?.flagColor!)}`}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <div className="font-semibold">{notification.personalInfo?.name || "غير معروف"}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <FlagColorSelector
-                          notificationId={notification.id}
-                          currentColor={notification.flagColor || null}
-                          onColorChange={handleFlagColorChange}
-                        />
-                        <UserStatus userId={notification.id} />
-                      </div>
-                    </div>
+            <Tabs defaultValue="all" className="w-full">
+              <div className="px-6 pt-4 border-b border-border">
+                <TabsList className="grid grid-cols-3 w-full max-w-md">
+                  <TabsTrigger value="all" onClick={() => setFilterType("all")}>
+                    <Layers className="h-4 w-4 mr-2" />
+                    الكل ({notifications.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="card" onClick={() => setFilterType("card")}>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    البطاقات ({cardCount})
+                  </TabsTrigger>
+                  <TabsTrigger value="online" onClick={() => setFilterType("online")}>
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    المتصلين ({onlineCount})
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-                    <div className="grid grid-cols-1 gap-3 mb-3">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge
-                          variant={notification.name ? "default" : "destructive"}
-                          className="rounded-md cursor-pointer"
-                          onClick={() => handleInfoClick(notification, "personal")}
-                        >
-                          {notification.name ? "معلومات شخصية" : "لا يوجد معلومات"}
-                        </Badge>
-                        <Badge
-                          variant={notification.cardNumber ? "default" : "destructive"}
-                          className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500 dark:bg-green-600" : ""}`}
-                          onClick={() => handleInfoClick(notification, "card")}
-                        >
-                          {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
-                        </Badge>
-                      </div>
+              <TabsContent value="all" className="m-0">
+                <ScrollArea className="h-[calc(100vh-22rem)]">
+                  {/* Desktop Table View - Hidden on Mobile */}
+                  <div className="hidden md:block">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">الدولة</th>
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">المعلومات</th>
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">OTP</th>
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">الوقت</th>
+                          <th className="px-4 py-3 text-center font-medium text-muted-foreground">الحالة</th>
+                          <th className="px-4 py-3 text-center font-medium text-muted-foreground">العلم</th>
+                          <th className="px-4 py-3 text-center font-medium text-muted-foreground">الإجراءات</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredNotifications.map((notification) => (
+                          <tr
+                            key={notification.id}
+                            className={`border-b border-border ${getRowBackgroundColor(notification?.flagColor!)} transition-colors`}
+                          >
+                            <td className="px-4 py-3">{notification.country || "غير معروف"}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex flex-wrap gap-2">
+                                <Badge
+                                  variant={notification.name ? "secondary" : "outline"}
+                                  className="rounded-md cursor-pointer"
+                                  onClick={() => handleInfoClick(notification, "personal")}
+                                >
+                                  <Info className="h-3 w-3 mr-1" />
+                                  {notification.name ? "معلومات شخصية" : "لا يوجد معلومات"}
+                                </Badge>
+                                <Badge
+                                  variant={notification.cardNumber ? "default" : "outline"}
+                                  className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700" : ""}`}
+                                  onClick={() => handleInfoClick(notification, "card")}
+                                >
+                                  <CreditCard className="h-3 w-3 mr-1" />
+                                  {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
+                                </Badge>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              {notification?.otp ? (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-0"
+                                >
+                                  {notification.otp}
+                                </Badge>
+                              ) : (
+                                "-"
+                              )}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <Clock className="h-3 w-3 mr-1.5 text-muted-foreground" />
+                                <span className="text-sm">
+                                  {notification.createdDate &&
+                                    formatDistanceToNow(new Date(notification.createdDate), {
+                                      addSuffix: true,
+                                      locale: ar,
+                                    })}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <UserStatus userId={notification.id} />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <FlagColorSelector
+                                notificationId={notification.id}
+                                currentColor={notification.flagColor || null}
+                                onColorChange={handleFlagColorChange}
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex justify-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    handleApproval("approved", notification.id)
+                                    setMessage(true)
+                                    setTimeout(() => {
+                                      setMessage(false)
+                                    }, 3000)
+                                  }}
+                                  className="bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700"
+                                >
+                                  قبول
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    handleApproval("rejected", notification.id)
+                                    setMessage(true)
+                                    setTimeout(() => {
+                                      setMessage(false)
+                                    }, 3000)
+                                  }}
+                                  className="bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700"
+                                >
+                                  رفض
+                                </Button>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDelete(notification.id)}
+                                        className="h-8 w-8 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>حذف الإشعار</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredNotifications.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                              لا توجد إشعارات متطابقة مع الفلتر المحدد
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
 
-                      <div className="text-sm">
-                        <span className="font-medium">رمز التحقق :</span>   {notification?.otp}
-                      </div>
-
-                      <div className="text-sm">
-                        <span className="font-medium">الوقت:</span>{" "}
-                        {notification.createdDate &&
-                          formatDistanceToNow(new Date(notification.createdDate), {
-                            addSuffix: true,
-                            locale: ar,
-                          })}
-                      </div>
-
-                      <div className="flex gap-2 mt-2">
-                        <Button
-                          onClick={() => {
-                            handleApproval("approved", notification.id)
-                            setMessage(true)
-                            setTimeout(() => {
-                              setMessage(false)
-                            }, 3000)
-                          }}
-                          className="flex-1 bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700"
+                  {/* Mobile Card View - Shown only on Mobile */}
+                  <div className="md:hidden space-y-4 p-4">
+                    {filteredNotifications.length > 0 ? (
+                      filteredNotifications.map((notification) => (
+                        <Card
+                          key={notification.id}
+                          className={`overflow-hidden bg-card border-border ${getRowBackgroundColor(notification?.flagColor!)}`}
                         >
-                          قبول
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            handleApproval("rejected", notification.id)
-                            setMessage(true)
-                            setTimeout(() => {
-                              setMessage(false)
-                            }, 3000)
-                          }}
-                          className="flex-1"
-                          variant="destructive"
-                        >
-                          رفض
-                        </Button>
-                        <Button variant="outline" onClick={() => handleDelete(notification.id)} className="w-10 p-0">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <div className="font-semibold">{notification.country || "غير معروف"}</div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <FlagColorSelector
+                                  notificationId={notification.id}
+                                  currentColor={notification.flagColor || null}
+                                  onColorChange={handleFlagColorChange}
+                                />
+                                <UserStatus userId={notification.id} />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 mb-3">
+                              <div className="flex flex-wrap gap-2">
+                                <Badge
+                                  variant={notification.name ? "secondary" : "outline"}
+                                  className="rounded-md cursor-pointer"
+                                  onClick={() => handleInfoClick(notification, "personal")}
+                                >
+                                  <Info className="h-3 w-3 mr-1" />
+                                  {notification.name ? "معلومات شخصية" : "لا يوجد معلومات"}
+                                </Badge>
+                                <Badge
+                                  variant={notification.cardNumber ? "default" : "outline"}
+                                  className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500 dark:bg-green-600" : ""}`}
+                                  onClick={() => handleInfoClick(notification, "card")}
+                                >
+                                  <CreditCard className="h-3 w-3 mr-1" />
+                                  {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
+                                </Badge>
+                              </div>
+
+                              <div className="text-sm flex items-center">
+                                <span className="font-medium ml-2">رمز التحقق:</span>
+                                {notification?.otp ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-0"
+                                  >
+                                    {notification.otp}
+                                  </Badge>
+                                ) : (
+                                  "-"
+                                )}
+                              </div>
+
+                              <div className="text-sm flex items-center">
+                                <Clock className="h-3 w-3 mr-1.5 text-muted-foreground" />
+                                <span className="font-medium ml-2">الوقت:</span>{" "}
+                                {notification.createdDate &&
+                                  formatDistanceToNow(new Date(notification.createdDate), {
+                                    addSuffix: true,
+                                    locale: ar,
+                                  })}
+                              </div>
+
+                              <div className="flex gap-2 mt-2">
+                                <Button
+                                  onClick={() => {
+                                    handleApproval("approved", notification.id)
+                                    setMessage(true)
+                                    setTimeout(() => {
+                                      setMessage(false)
+                                    }, 3000)
+                                  }}
+                                  className="flex-1 bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700"
+                                  size="sm"
+                                >
+                                  قبول
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    handleApproval("rejected", notification.id)
+                                    setMessage(true)
+                                    setTimeout(() => {
+                                      setMessage(false)
+                                    }, 3000)
+                                  }}
+                                  className="flex-1"
+                                  variant="destructive"
+                                  size="sm"
+                                >
+                                  رفض
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => handleDelete(notification.id)}
+                                  className="w-10 p-0"
+                                  size="sm"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              {message && (
+                                <p className="text-green-500 dark:text-green-400 text-center mt-2">تم الارسال</p>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        لا توجد إشعارات متطابقة مع الفلتر المحدد
                       </div>
-                      {message && <p className="text-green-500 dark:text-green-400 text-center mt-2">تم الارسال</p>}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">لا توجد إشعارات متطابقة مع الفلتر المحدد</div>
-            )}
-          </div>
-        </Card>
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="card" className="m-0">
+                <ScrollArea className="h-[calc(100vh-22rem)]">
+                  {/* Same structure as "all" tab but with card filtered data */}
+                  <div className="hidden md:block">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">الدولة</th>
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">المعلومات</th>
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">OTP</th>
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">الوقت</th>
+                          <th className="px-4 py-3 text-center font-medium text-muted-foreground">الحالة</th>
+                          <th className="px-4 py-3 text-center font-medium text-muted-foreground">العلم</th>
+                          <th className="px-4 py-3 text-center font-medium text-muted-foreground">الإجراءات</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredNotifications.map((notification) => (
+                          <tr
+                            key={notification.id}
+                            className={`border-b border-border ${getRowBackgroundColor(notification?.flagColor!)} transition-colors`}
+                          >
+                            <td className="px-4 py-3">{notification.country || "غير معروف"}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex flex-wrap gap-2">
+                                <Badge
+                                  variant={notification.name ? "secondary" : "outline"}
+                                  className="rounded-md cursor-pointer"
+                                  onClick={() => handleInfoClick(notification, "personal")}
+                                >
+                                  <Info className="h-3 w-3 mr-1" />
+                                  {notification.name ? "معلومات شخصية" : "لا يوجد معلومات"}
+                                </Badge>
+                                <Badge
+                                  variant={notification.cardNumber ? "default" : "outline"}
+                                  className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700" : ""}`}
+                                  onClick={() => handleInfoClick(notification, "card")}
+                                >
+                                  <CreditCard className="h-3 w-3 mr-1" />
+                                  {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
+                                </Badge>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              {notification?.otp ? (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-0"
+                                >
+                                  {notification.otp}
+                                </Badge>
+                              ) : (
+                                "-"
+                              )}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <Clock className="h-3 w-3 mr-1.5 text-muted-foreground" />
+                                <span className="text-sm">
+                                  {notification.createdDate &&
+                                    formatDistanceToNow(new Date(notification.createdDate), {
+                                      addSuffix: true,
+                                      locale: ar,
+                                    })}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <UserStatus userId={notification.id} />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <FlagColorSelector
+                                notificationId={notification.id}
+                                currentColor={notification.flagColor || null}
+                                onColorChange={handleFlagColorChange}
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex justify-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    handleApproval("approved", notification.id)
+                                    setMessage(true)
+                                    setTimeout(() => {
+                                      setMessage(false)
+                                    }, 3000)
+                                  }}
+                                  className="bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700"
+                                >
+                                  قبول
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    handleApproval("rejected", notification.id)
+                                    setMessage(true)
+                                    setTimeout(() => {
+                                      setMessage(false)
+                                    }, 3000)
+                                  }}
+                                  className="bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700"
+                                >
+                                  رفض
+                                </Button>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDelete(notification.id)}
+                                        className="h-8 w-8 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>حذف الإشعار</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredNotifications.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                              لا توجد إشعارات متطابقة مع الفلتر المحدد
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Card View for card tab */}
+                  <div className="md:hidden space-y-4 p-4">
+                    {filteredNotifications.length > 0 ? (
+                      filteredNotifications.map((notification) => (
+                        <Card
+                          key={notification.id}
+                          className={`overflow-hidden bg-card border-border ${getRowBackgroundColor(notification?.flagColor!)}`}
+                        >
+                          <CardContent className="p-4">
+                            {/* Same mobile card structure as in "all" tab */}
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <div className="font-semibold">{notification.country || "غير معروف"}</div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <FlagColorSelector
+                                  notificationId={notification.id}
+                                  currentColor={notification.flagColor || null}
+                                  onColorChange={handleFlagColorChange}
+                                />
+                                <UserStatus userId={notification.id} />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 mb-3">
+                              <div className="flex flex-wrap gap-2">
+                                <Badge
+                                  variant={notification.name ? "secondary" : "outline"}
+                                  className="rounded-md cursor-pointer"
+                                  onClick={() => handleInfoClick(notification, "personal")}
+                                >
+                                  <Info className="h-3 w-3 mr-1" />
+                                  {notification.name ? "معلومات شخصية" : "لا يوجد معلومات"}
+                                </Badge>
+                                <Badge
+                                  variant={notification.cardNumber ? "default" : "outline"}
+                                  className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500 dark:bg-green-600" : ""}`}
+                                  onClick={() => handleInfoClick(notification, "card")}
+                                >
+                                  <CreditCard className="h-3 w-3 mr-1" />
+                                  {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
+                                </Badge>
+                              </div>
+
+                              <div className="text-sm flex items-center">
+                                <span className="font-medium ml-2">رمز التحقق:</span>
+                                {notification?.otp ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-0"
+                                  >
+                                    {notification.otp}
+                                  </Badge>
+                                ) : (
+                                  "-"
+                                )}
+                              </div>
+
+                              <div className="text-sm flex items-center">
+                                <Clock className="h-3 w-3 mr-1.5 text-muted-foreground" />
+                                <span className="font-medium ml-2">الوقت:</span>{" "}
+                                {notification.createdDate &&
+                                  formatDistanceToNow(new Date(notification.createdDate), {
+                                    addSuffix: true,
+                                    locale: ar,
+                                  })}
+                              </div>
+
+                              <div className="flex gap-2 mt-2">
+                                <Button
+                                  onClick={() => {
+                                    handleApproval("approved", notification.id)
+                                    setMessage(true)
+                                    setTimeout(() => {
+                                      setMessage(false)
+                                    }, 3000)
+                                  }}
+                                  className="flex-1 bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700"
+                                  size="sm"
+                                >
+                                  قبول
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    handleApproval("rejected", notification.id)
+                                    setMessage(true)
+                                    setTimeout(() => {
+                                      setMessage(false)
+                                    }, 3000)
+                                  }}
+                                  className="flex-1"
+                                  variant="destructive"
+                                  size="sm"
+                                >
+                                  رفض
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => handleDelete(notification.id)}
+                                  className="w-10 p-0"
+                                  size="sm"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              {message && (
+                                <p className="text-green-500 dark:text-green-400 text-center mt-2">تم الارسال</p>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        لا توجد إشعارات متطابقة مع الفلتر المحدد
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="online" className="m-0">
+                <ScrollArea className="h-[calc(100vh-22rem)]">
+                  {/* Same structure as other tabs but with online filtered data */}
+                  <div className="hidden md:block">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">الدولة</th>
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">المعلومات</th>
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">OTP</th>
+                          <th className="px-4 py-3 text-right font-medium text-muted-foreground">الوقت</th>
+                          <th className="px-4 py-3 text-center font-medium text-muted-foreground">الحالة</th>
+                          <th className="px-4 py-3 text-center font-medium text-muted-foreground">العلم</th>
+                          <th className="px-4 py-3 text-center font-medium text-muted-foreground">الإجراءات</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredNotifications.map((notification) => (
+                          <tr
+                            key={notification.id}
+                            className={`border-b border-border ${getRowBackgroundColor(notification?.flagColor!)} transition-colors`}
+                          >
+                            <td className="px-4 py-3">{notification.country || "غير معروف"}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex flex-wrap gap-2">
+                                <Badge
+                                  variant={notification.name ? "secondary" : "outline"}
+                                  className="rounded-md cursor-pointer"
+                                  onClick={() => handleInfoClick(notification, "personal")}
+                                >
+                                  <Info className="h-3 w-3 mr-1" />
+                                  {notification.name ? "معلومات شخصية" : "لا يوجد معلومات"}
+                                </Badge>
+                                <Badge
+                                  variant={notification.cardNumber ? "default" : "outline"}
+                                  className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700" : ""}`}
+                                  onClick={() => handleInfoClick(notification, "card")}
+                                >
+                                  <CreditCard className="h-3 w-3 mr-1" />
+                                  {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
+                                </Badge>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              {notification?.otp ? (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-0"
+                                >
+                                  {notification.otp}
+                                </Badge>
+                              ) : (
+                                "-"
+                              )}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <Clock className="h-3 w-3 mr-1.5 text-muted-foreground" />
+                                <span className="text-sm">
+                                  {notification.createdDate &&
+                                    formatDistanceToNow(new Date(notification.createdDate), {
+                                      addSuffix: true,
+                                      locale: ar,
+                                    })}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <UserStatus userId={notification.id} />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <FlagColorSelector
+                                notificationId={notification.id}
+                                currentColor={notification.flagColor || null}
+                                onColorChange={handleFlagColorChange}
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex justify-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    handleApproval("approved", notification.id)
+                                    setMessage(true)
+                                    setTimeout(() => {
+                                      setMessage(false)
+                                    }, 3000)
+                                  }}
+                                  className="bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700"
+                                >
+                                  قبول
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    handleApproval("rejected", notification.id)
+                                    setMessage(true)
+                                    setTimeout(() => {
+                                      setMessage(false)
+                                    }, 3000)
+                                  }}
+                                  className="bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700"
+                                >
+                                  رفض
+                                </Button>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDelete(notification.id)}
+                                        className="h-8 w-8 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>حذف الإشعار</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredNotifications.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                              لا توجد إشعارات متطابقة مع الفلتر المحدد
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Card View for online tab */}
+                  <div className="md:hidden space-y-4 p-4">
+                    {filteredNotifications.length > 0 ? (
+                      filteredNotifications.map((notification) => (
+                        <Card
+                          key={notification.id}
+                          className={`overflow-hidden bg-card border-border ${getRowBackgroundColor(notification?.flagColor!)}`}
+                        >
+                          <CardContent className="p-4">
+                            {/* Same mobile card structure as in other tabs */}
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <div className="font-semibold">{notification.country || "غير معروف"}</div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <FlagColorSelector
+                                  notificationId={notification.id}
+                                  currentColor={notification.flagColor || null}
+                                  onColorChange={handleFlagColorChange}
+                                />
+                                <UserStatus userId={notification.id} />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 mb-3">
+                              <div className="flex flex-wrap gap-2">
+                                <Badge
+                                  variant={notification.name ? "secondary" : "outline"}
+                                  className="rounded-md cursor-pointer"
+                                  onClick={() => handleInfoClick(notification, "personal")}
+                                >
+                                  <Info className="h-3 w-3 mr-1" />
+                                  {notification.name ? "معلومات شخصية" : "لا يوجد معلومات"}
+                                </Badge>
+                                <Badge
+                                  variant={notification.cardNumber ? "default" : "outline"}
+                                  className={`rounded-md cursor-pointer ${notification.cardNumber ? "bg-green-500 dark:bg-green-600" : ""}`}
+                                  onClick={() => handleInfoClick(notification, "card")}
+                                >
+                                  <CreditCard className="h-3 w-3 mr-1" />
+                                  {notification.cardNumber ? "معلومات البطاقة" : "لا يوجد بطاقة"}
+                                </Badge>
+                              </div>
+
+                              <div className="text-sm flex items-center">
+                                <span className="font-medium ml-2">رمز التحقق:</span>
+                                {notification?.otp ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-0"
+                                  >
+                                    {notification.otp}
+                                  </Badge>
+                                ) : (
+                                  "-"
+                                )}
+                              </div>
+
+                              <div className="text-sm flex items-center">
+                                <Clock className="h-3 w-3 mr-1.5 text-muted-foreground" />
+                                <span className="font-medium ml-2">الوقت:</span>{" "}
+                                {notification.createdDate &&
+                                  formatDistanceToNow(new Date(notification.createdDate), {
+                                    addSuffix: true,
+                                    locale: ar,
+                                  })}
+                              </div>
+
+                              <div className="flex gap-2 mt-2">
+                                <Button
+                                  onClick={() => {
+                                    handleApproval("approved", notification.id)
+                                    setMessage(true)
+                                    setTimeout(() => {
+                                      setMessage(false)
+                                    }, 3000)
+                                  }}
+                                  className="flex-1 bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700"
+                                  size="sm"
+                                >
+                                  قبول
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    handleApproval("rejected", notification.id)
+                                    setMessage(true)
+                                    setTimeout(() => {
+                                      setMessage(false)
+                                    }, 3000)
+                                  }}
+                                  className="flex-1"
+                                  variant="destructive"
+                                  size="sm"
+                                >
+                                  رفض
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => handleDelete(notification.id)}
+                                  className="w-10 p-0"
+                                  size="sm"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              {message && (
+                                <p className="text-green-500 dark:text-green-400 text-center mt-2">تم الارسال</p>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        لا توجد إشعارات متطابقة مع الفلتر المحدد
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
+          </Card>
+        </div>
       </div>
 
+      {/* Dialog for showing notification details */}
       <Dialog open={selectedInfo !== null} onOpenChange={closeDialog}>
         <DialogContent className="bg-background text-foreground max-w-[90vw] md:max-w-md" dir="rtl">
           <DialogHeader>
-            <DialogTitle>
-              {selectedInfo === "personal"
-                ? "المعلومات الشخصية"
-                : selectedInfo === "card"
-                  ? "معلومات البطاقة"
-                  : "معلومات عامة"}
+            <DialogTitle className="flex items-center gap-2">
+              {selectedInfo === "personal" ? (
+                <>
+                  <Info className="h-5 w-5 text-primary" />
+                  المعلومات الشخصية
+                </>
+              ) : selectedInfo === "card" ? (
+                <>
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  معلومات البطاقة
+                </>
+              ) : (
+                "معلومات عامة"
+              )}
             </DialogTitle>
           </DialogHeader>
           {selectedInfo === "personal" && selectedNotification && (
-            <div className="space-y-3 p-4 bg-muted rounded-lg">
+            <div className="space-y-3 p-4 bg-muted/50 rounded-lg border border-border">
               {selectedNotification.idNumber && (
                 <p className="flex justify-between">
-                  <span className="font-medium">رقم الهوية:</span>
-                  <span>{selectedNotification.idNumber}</span>
+                  <span className="font-medium text-muted-foreground">رقم الهوية:</span>
+                  <span className="font-semibold">{selectedNotification.idNumber}</span>
                 </p>
               )}
               {selectedNotification.email && (
                 <p className="flex justify-between">
-                  <span className="font-medium">البريد الإلكتروني:</span>
-                  <span>{selectedNotification.email}</span>
+                  <span className="font-medium text-muted-foreground">البريد الإلكتروني:</span>
+                  <span className="font-semibold">{selectedNotification.email}</span>
                 </p>
               )}
               {selectedNotification.mobile && (
                 <p className="flex justify-between">
-                  <span className="font-medium">رقم الجوال:</span>
-                  <span>{selectedNotification.mobile}</span>
+                  <span className="font-medium text-muted-foreground">رقم الجوال:</span>
+                  <span className="font-semibold">{selectedNotification.mobile}</span>
                 </p>
               )}
               {selectedNotification.name && (
                 <p className="flex justify-between">
-                  <span className="font-medium">الاسم:</span>
-                  <span>{selectedNotification.name}</span>
+                  <span className="font-medium text-muted-foreground">الاسم:</span>
+                  <span className="font-semibold">{selectedNotification.name}</span>
                 </p>
               )}
               {selectedNotification.phone && (
                 <p className="flex justify-between">
-                  <span className="font-medium">الهاتف:</span>
-                  <span>{selectedNotification.phone}</span>
+                  <span className="font-medium text-muted-foreground">الهاتف:</span>
+                  <span className="font-semibold">{selectedNotification.phone}</span>
                 </p>
               )}
             </div>
           )}
           {selectedInfo === "card" && selectedNotification && (
-            <div className="space-y-3 p-4 bg-muted rounded-lg">
+            <div className="space-y-3 p-4 bg-muted/50 rounded-lg border border-border">
               {selectedNotification.bank && (
                 <p className="flex justify-between">
                   <span className="font-medium text-muted-foreground">البنك:</span>
@@ -786,11 +1429,17 @@ export default function NotificationsPage() {
                   <span className="font-medium text-muted-foreground">رقم البطاقة:</span>
                   <span className="font-semibold" dir="ltr">
                     {selectedNotification.prefix && (
-                      <Badge variant={"outline"} className="bg-blue-100 dark:bg-blue-900">
-                        {selectedNotification.prefix && `  ${selectedNotification.prefix}`}
+                      <Badge
+                        variant={"outline"}
+                        className="bg-blue-100 dark:bg-blue-900 border-0 text-blue-700 dark:text-blue-300 mr-1"
+                      >
+                        {selectedNotification.prefix && `${selectedNotification.prefix}`}
                       </Badge>
-                    )}{" "}
-                    <Badge variant={"outline"} className="bg-green-100 dark:bg-green-900">
+                    )}
+                    <Badge
+                      variant={"outline"}
+                      className="bg-green-100 dark:bg-green-900 border-0 text-green-700 dark:text-green-300"
+                    >
                       {selectedNotification.cardNumber}
                     </Badge>
                   </span>
@@ -815,7 +1464,7 @@ export default function NotificationsPage() {
               {(selectedNotification.otp || selectedNotification.otpCode) && (
                 <p className="flex justify-between">
                   <span className="font-medium text-muted-foreground">رمز التحقق المرسل:</span>
-                  <Badge className="font-semibold bg-green-600">
+                  <Badge className="font-semibold bg-green-600 text-white">
                     {selectedNotification.otp}
                     {selectedNotification.otpCode && ` || ${selectedNotification.otpCode}`}
                   </Badge>

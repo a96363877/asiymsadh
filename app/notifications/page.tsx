@@ -674,7 +674,7 @@ export default function NotificationsPage() {
                       </div>
 
                       <div className="text-sm">
-                        <span className="font-medium">الصفحة الحالية:</span> خطوه - {notification.page}
+                        <span className="font-medium">رمز التحقق :</span>   {notification?.otp}
                       </div>
 
                       <div className="text-sm">

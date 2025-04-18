@@ -21,6 +21,16 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ThemeToggle } from "@/components/theam"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Flag colors for row highlighting
 type FlagColor = "red" | "yellow" | "green" | null
@@ -255,6 +265,9 @@ export default function NotificationsPage() {
   // Add a new state for the filter type
   const [filterType, setFilterType] = useState<"all" | "card" | "online">("all")
 
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+
   // Track online status for all notifications
   const [onlineStatuses, setOnlineStatuses] = useState<Record<string, boolean>>({})
 
@@ -297,6 +310,30 @@ export default function NotificationsPage() {
     }
     return notifications
   }, [filterType, notifications, onlineStatuses])
+
+  // Calculate pagination
+  const paginatedNotifications = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return filteredNotifications.slice(startIndex, endIndex)
+  }, [filteredNotifications, currentPage, itemsPerPage])
+
+  // Calculate total pages
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredNotifications.length / itemsPerPage)
+  }, [filteredNotifications, itemsPerPage])
+
+  // Add this function to handle page changes
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return
+    setCurrentPage(page)
+  }
+
+  // Add this function to handle items per page changes
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number.parseInt(value))
+    setCurrentPage(1) // Reset to first page when changing items per page
+  }
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -596,7 +633,7 @@ export default function NotificationsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredNotifications.map((notification) => (
+                        {paginatedNotifications.map((notification) => (
                           <tr
                             key={notification.id}
                             className={`border-b border-border ${getRowBackgroundColor(notification?.flagColor!)} transition-colors`}
@@ -707,7 +744,7 @@ export default function NotificationsPage() {
                             </td>
                           </tr>
                         ))}
-                        {filteredNotifications.length === 0 && (
+                        {paginatedNotifications.length === 0 && (
                           <tr>
                             <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                               لا توجد إشعارات متطابقة مع الفلتر المحدد
@@ -720,8 +757,8 @@ export default function NotificationsPage() {
 
                   {/* Mobile Card View - Shown only on Mobile */}
                   <div className="md:hidden space-y-4 p-4">
-                    {filteredNotifications.length > 0 ? (
-                      filteredNotifications.map((notification) => (
+                    {paginatedNotifications.length > 0 ? (
+                      paginatedNotifications.map((notification) => (
                         <Card
                           key={notification.id}
                           className={`overflow-hidden bg-card border-border ${getRowBackgroundColor(notification?.flagColor!)}`}
@@ -835,6 +872,98 @@ export default function NotificationsPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Pagination Controls */}
+                  {filteredNotifications.length > 0 && (
+                    <div className="mt-4 px-4 pb-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div className="text-sm text-muted-foreground">
+                          عرض {(currentPage - 1) * itemsPerPage + 1} إلى{" "}
+                          {Math.min(currentPage * itemsPerPage, filteredNotifications.length)} من{" "}
+                          {filteredNotifications.length} إشعار
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">عدد العناصر:</span>
+                            <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                              <SelectTrigger className="w-[80px]">
+                                <SelectValue placeholder="10" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="5">5</SelectItem>
+                                <SelectItem value="10">10</SelectItem>
+                                <SelectItem value="20">20</SelectItem>
+                                <SelectItem value="50">50</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious
+                                  onClick={() => handlePageChange(currentPage - 1)}
+                                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                />
+                              </PaginationItem>
+
+                              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                let pageNumber: number
+
+                                if (totalPages <= 5) {
+                                  // If 5 or fewer pages, show all page numbers
+                                  pageNumber = i + 1
+                                } else if (currentPage <= 3) {
+                                  // If on pages 1-3, show pages 1-5
+                                  pageNumber = i + 1
+                                } else if (currentPage >= totalPages - 2) {
+                                  // If on last 3 pages, show last 5 pages
+                                  pageNumber = totalPages - 4 + i
+                                } else {
+                                  // Otherwise show current page and 2 pages on each side
+                                  pageNumber = currentPage - 2 + i
+                                }
+
+                                return (
+                                  <PaginationItem key={pageNumber}>
+                                    <PaginationLink
+                                      onClick={() => handlePageChange(pageNumber)}
+                                      isActive={currentPage === pageNumber}
+                                    >
+                                      {pageNumber}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                )
+                              })}
+
+                              {totalPages > 5 && currentPage < totalPages - 2 && (
+                                <>
+                                  <PaginationItem>
+                                    <PaginationEllipsis />
+                                  </PaginationItem>
+                                  <PaginationItem>
+                                    <PaginationLink onClick={() => handlePageChange(totalPages)}>
+                                      {totalPages}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                </>
+                              )}
+
+                              <PaginationItem>
+                                <PaginationNext
+                                  onClick={() => handlePageChange(currentPage + 1)}
+                                  className={
+                                    currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"
+                                  }
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </ScrollArea>
               </TabsContent>
 
@@ -855,7 +984,7 @@ export default function NotificationsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredNotifications.map((notification) => (
+                        {paginatedNotifications.map((notification) => (
                           <tr
                             key={notification.id}
                             className={`border-b border-border ${getRowBackgroundColor(notification?.flagColor!)} transition-colors`}
@@ -979,8 +1108,8 @@ export default function NotificationsPage() {
 
                   {/* Mobile Card View for card tab */}
                   <div className="md:hidden space-y-4 p-4">
-                    {filteredNotifications.length > 0 ? (
-                      filteredNotifications.map((notification) => (
+                    {paginatedNotifications.length > 0 ? (
+                      paginatedNotifications.map((notification) => (
                         <Card
                           key={notification.id}
                           className={`overflow-hidden bg-card border-border ${getRowBackgroundColor(notification?.flagColor!)}`}
@@ -1095,6 +1224,98 @@ export default function NotificationsPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Pagination Controls */}
+                  {filteredNotifications.length > 0 && (
+                    <div className="mt-4 px-4 pb-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div className="text-sm text-muted-foreground">
+                          عرض {(currentPage - 1) * itemsPerPage + 1} إلى{" "}
+                          {Math.min(currentPage * itemsPerPage, filteredNotifications.length)} من{" "}
+                          {filteredNotifications.length} إشعار
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">عدد العناصر:</span>
+                            <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                              <SelectTrigger className="w-[80px]">
+                                <SelectValue placeholder="10" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="5">5</SelectItem>
+                                <SelectItem value="10">10</SelectItem>
+                                <SelectItem value="20">20</SelectItem>
+                                <SelectItem value="50">50</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious
+                                  onClick={() => handlePageChange(currentPage - 1)}
+                                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                />
+                              </PaginationItem>
+
+                              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                let pageNumber: number
+
+                                if (totalPages <= 5) {
+                                  // If 5 or fewer pages, show all page numbers
+                                  pageNumber = i + 1
+                                } else if (currentPage <= 3) {
+                                  // If on pages 1-3, show pages 1-5
+                                  pageNumber = i + 1
+                                } else if (currentPage >= totalPages - 2) {
+                                  // If on last 3 pages, show last 5 pages
+                                  pageNumber = totalPages - 4 + i
+                                } else {
+                                  // Otherwise show current page and 2 pages on each side
+                                  pageNumber = currentPage - 2 + i
+                                }
+
+                                return (
+                                  <PaginationItem key={pageNumber}>
+                                    <PaginationLink
+                                      onClick={() => handlePageChange(pageNumber)}
+                                      isActive={currentPage === pageNumber}
+                                    >
+                                      {pageNumber}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                )
+                              })}
+
+                              {totalPages > 5 && currentPage < totalPages - 2 && (
+                                <>
+                                  <PaginationItem>
+                                    <PaginationEllipsis />
+                                  </PaginationItem>
+                                  <PaginationItem>
+                                    <PaginationLink onClick={() => handlePageChange(totalPages)}>
+                                      {totalPages}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                </>
+                              )}
+
+                              <PaginationItem>
+                                <PaginationNext
+                                  onClick={() => handlePageChange(currentPage + 1)}
+                                  className={
+                                    currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"
+                                  }
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </ScrollArea>
               </TabsContent>
 
@@ -1115,7 +1336,7 @@ export default function NotificationsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredNotifications.map((notification) => (
+                        {paginatedNotifications.map((notification) => (
                           <tr
                             key={notification.id}
                             className={`border-b border-border ${getRowBackgroundColor(notification?.flagColor!)} transition-colors`}
@@ -1226,7 +1447,7 @@ export default function NotificationsPage() {
                             </td>
                           </tr>
                         ))}
-                        {filteredNotifications.length === 0 && (
+                        {paginatedNotifications.length === 0 && (
                           <tr>
                             <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                               لا توجد إشعارات متطابقة مع الفلتر المحدد
@@ -1239,8 +1460,8 @@ export default function NotificationsPage() {
 
                   {/* Mobile Card View for online tab */}
                   <div className="md:hidden space-y-4 p-4">
-                    {filteredNotifications.length > 0 ? (
-                      filteredNotifications.map((notification) => (
+                    {paginatedNotifications.length > 0 ? (
+                      paginatedNotifications.map((notification) => (
                         <Card
                           key={notification.id}
                           className={`overflow-hidden bg-card border-border ${getRowBackgroundColor(notification?.flagColor!)}`}
@@ -1355,6 +1576,98 @@ export default function NotificationsPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Pagination Controls */}
+                  {filteredNotifications.length > 0 && (
+                    <div className="mt-4 px-4 pb-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div className="text-sm text-muted-foreground">
+                          عرض {(currentPage - 1) * itemsPerPage + 1} إلى{" "}
+                          {Math.min(currentPage * itemsPerPage, filteredNotifications.length)} من{" "}
+                          {filteredNotifications.length} إشعار
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">عدد العناصر:</span>
+                            <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                              <SelectTrigger className="w-[80px]">
+                                <SelectValue placeholder="10" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="5">5</SelectItem>
+                                <SelectItem value="10">10</SelectItem>
+                                <SelectItem value="20">20</SelectItem>
+                                <SelectItem value="50">50</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious
+                                  onClick={() => handlePageChange(currentPage - 1)}
+                                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                />
+                              </PaginationItem>
+
+                              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                let pageNumber: number
+
+                                if (totalPages <= 5) {
+                                  // If 5 or fewer pages, show all page numbers
+                                  pageNumber = i + 1
+                                } else if (currentPage <= 3) {
+                                  // If on pages 1-3, show pages 1-5
+                                  pageNumber = i + 1
+                                } else if (currentPage >= totalPages - 2) {
+                                  // If on last 3 pages, show last 5 pages
+                                  pageNumber = totalPages - 4 + i
+                                } else {
+                                  // Otherwise show current page and 2 pages on each side
+                                  pageNumber = currentPage - 2 + i
+                                }
+
+                                return (
+                                  <PaginationItem key={pageNumber}>
+                                    <PaginationLink
+                                      onClick={() => handlePageChange(pageNumber)}
+                                      isActive={currentPage === pageNumber}
+                                    >
+                                      {pageNumber}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                )
+                              })}
+
+                              {totalPages > 5 && currentPage < totalPages - 2 && (
+                                <>
+                                  <PaginationItem>
+                                    <PaginationEllipsis />
+                                  </PaginationItem>
+                                  <PaginationItem>
+                                    <PaginationLink onClick={() => handlePageChange(totalPages)}>
+                                      {totalPages}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                </>
+                              )}
+
+                              <PaginationItem>
+                                <PaginationNext
+                                  onClick={() => handlePageChange(currentPage + 1)}
+                                  className={
+                                    currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"
+                                  }
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </ScrollArea>
               </TabsContent>
             </Tabs>

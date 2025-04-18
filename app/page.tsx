@@ -49,7 +49,7 @@ export default function LoginPage() {
   return (
     <div
       dir="rtl"
-      className="min-h-screen bg-gray-900 flex items-center justify-center p-4"
+      className="min-h-[100vh] h-full bg-gray-700 flex items-center justify-center p-4"
     >
       <Card className="w-full max-w-md bg-gray-800 text-white border-gray-700">
         <CardHeader className="space-y-1 text-center">

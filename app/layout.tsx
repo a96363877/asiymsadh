@@ -16,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl">
-      <body style={{zoom:0.9,height:'100vh'}} className={inter.className}>{children}</body>
+      <body style={{zoom:0.8,height:'100vh'}} className={inter.className}>{children}</body>
     </html>
   )
 }

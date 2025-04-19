@@ -1452,7 +1452,7 @@ export default function NotificationsPage() {
 
       {/* Dialog for showing notification details */}
       <Dialog open={selectedInfo !== null} onOpenChange={closeDialog}>
-        <DialogContent className="bg-card text-foreground max-w-[90vw] md:max-w-md shadow-lg border-border" dir="rtl">
+        <DialogContent className="bg-white text-foreground max-w-[90vw] md:max-w-md shadow-lg border-border" dir="rtl">
           <DialogHeader className="pb-2">
             <DialogTitle className="flex items-center gap-2 text-lg font-bold">
               {selectedInfo === "personal" ? (

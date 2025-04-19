@@ -49,9 +49,9 @@ export default function LoginPage() {
   return (
     <div
       dir="rtl"
-      className="min-h-[100vh] h-full bg-gray-700 flex items-center justify-center p-4"
+      className="min-h-[100vh] h-full bg-white flex items-center justify-center p-4"
     >
-      <Card className="w-full max-w-md bg-gray-800 text-white border-gray-700">
+      <Card className="w-full max-w-md bg-gray-800 text-white border-white">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">تسجيل الدخول</CardTitle>
         </CardHeader>
@@ -67,7 +67,7 @@ export default function LoginPage() {
                 type="email"
                 required
                 placeholder="ادخل البريد الإلكتروني"
-                className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                className="bg-white border-gray-600 text-white placeholder:text-gray-400"
                 value={formData.email}
                 onChange={handleInputChange}
                 disabled={isLoading}
@@ -84,7 +84,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   required
                   placeholder="ادخل كلمة المرور"
-                  className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                  className="bg-white border-gray-600 text-white placeholder:text-gray-400"
                   value={formData.password}
                   onChange={handleInputChange}
                   disabled={isLoading}
@@ -93,7 +93,7 @@ export default function LoginPage() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-gray-700"
+                  className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-white"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (

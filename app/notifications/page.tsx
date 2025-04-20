@@ -520,7 +520,7 @@ export default function NotificationsPage() {
 
         <div className="flex-1 container mx-auto px-6 py-6 overflow-hidden flex flex-col h-[calc(100vh-73px)]">
           {/* Statistics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6 animate-in fade-in-50 duration-500">
             {/* Online Users Card */}
             <Card className="bg-card shadow-md hover:shadow-lg transition-all duration-300 border-border overflow-hidden group">
               <CardContent className="p-6 flex items-center relative">
@@ -598,7 +598,13 @@ export default function NotificationsPage() {
                     className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
                   >
                     <Layers className="h-4 w-4 mr-2" />
-                    الكل ({notifications.length})
+                    الكل
+                    <Badge
+                      variant="secondary"
+                      className="ml-1.5 bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
+                    >
+                      {notifications.length}
+                    </Badge>
                   </TabsTrigger>
                   <TabsTrigger
                     value="card"
@@ -606,7 +612,13 @@ export default function NotificationsPage() {
                     className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
                   >
                     <CreditCard className="h-4 w-4 mr-2" />
-                    البطاقات ({cardCount})
+                    البطاقات
+                    <Badge
+                      variant="secondary"
+                      className="ml-1.5 bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/80 transition-colors"
+                    >
+                      {cardCount}
+                    </Badge>
                   </TabsTrigger>
                   <TabsTrigger
                     value="online"
@@ -614,13 +626,19 @@ export default function NotificationsPage() {
                     className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
                   >
                     <UserCheck className="h-4 w-4 mr-2" />
-                    المتصلين ({onlineCount})
+                    المتصلين
+                    <Badge
+                      variant="secondary"
+                      className="ml-1.5 bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/80 transition-colors"
+                    >
+                      {onlineCount}
+                    </Badge>
                   </TabsTrigger>
                 </TabsList>
               </div>
 
               <TabsContent value="all" className="m-0">
-                <ScrollArea className="h-[calc(100vh-280px)] overflow-y-auto">
+                <ScrollArea className="h-[calc(100vh-280px)] overflow-y-auto flex-1">
                   {/* Desktop Table View - Hidden on Mobile */}
                   <div className="hidden md:block">
                     <table className="w-full border-collapse">
@@ -636,13 +654,14 @@ export default function NotificationsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredNotifications.map((notification) => (
+                        {filteredNotifications.map((notification, index) => (
                           <tr
                             key={notification.id}
                             className={cn(
-                              "border-b border-border hover:bg-muted/20 transition-colors duration-200",
+                              "border-b border-border hover:bg-muted/20 transition-all duration-300 animate-in fade-in-50 slide-in-from-right-5",
                               getRowBackgroundColor(notification?.flagColor!),
                             )}
+                            style={{ animationDelay: `${index * 50}ms` }}
                           >
                             <td className="px-4 py-3.5 font-medium">{notification.country || "غير معروف"}</td>
                             <td className="px-4 py-3.5">
@@ -674,7 +693,8 @@ export default function NotificationsPage() {
                               {notification?.otp ? (
                                 <Badge
                                   variant="outline"
-                                  className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-0 shadow-sm"
+                                  className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-0 shadow-sm animate-in fade-in-50 slide-in-from-bottom-3 duration-500"
+                                  key={notification.otp}
                                 >
                                   {notification.otp}
                                 </Badge>
@@ -769,13 +789,14 @@ export default function NotificationsPage() {
                   {/* Mobile Card View - Shown only on Mobile */}
                   <div className="md:hidden space-y-4 p-4">
                     {filteredNotifications.length > 0 ? (
-                      filteredNotifications.map((notification) => (
+                      filteredNotifications.map((notification, index) => (
                         <Card
                           key={notification.id}
                           className={cn(
-                            "overflow-hidden bg-card border-border shadow-md hover:shadow-lg transition-all duration-300",
+                            "overflow-hidden bg-card border-border shadow-md hover:shadow-lg transition-all duration-300 animate-in fade-in-50 slide-in-from-right-5",
                             getRowBackgroundColor(notification?.flagColor!),
                           )}
+                          style={{ animationDelay: `${index * 50}ms` }}
                         >
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start mb-3">
@@ -822,7 +843,8 @@ export default function NotificationsPage() {
                                 {notification?.otp ? (
                                   <Badge
                                     variant="outline"
-                                    className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-0 shadow-sm"
+                                    className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-0 shadow-sm animate-in fade-in-50 slide-in-from-bottom-3 duration-500"
+                                    key={notification.otp}
                                   >
                                     {notification.otp}
                                   </Badge>
@@ -895,7 +917,7 @@ export default function NotificationsPage() {
               </TabsContent>
 
               <TabsContent value="card" className="m-0">
-                <ScrollArea className="h-[calc(100vh-280px)] overflow-y-auto">
+                <ScrollArea className="h-[calc(100vh-280px)] overflow-y-auto flex-1">
                   {/* Same structure as "all" tab but with card filtered data */}
                   <div className="hidden md:block">
                     <table className="w-full border-collapse">
@@ -911,13 +933,14 @@ export default function NotificationsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredNotifications.map((notification) => (
+                        {filteredNotifications.map((notification, index) => (
                           <tr
                             key={notification.id}
                             className={cn(
-                              "border-b border-border hover:bg-muted/20 transition-colors duration-200",
+                              "border-b border-border hover:bg-muted/20 transition-all duration-300 animate-in fade-in-50 slide-in-from-right-5",
                               getRowBackgroundColor(notification?.flagColor!),
                             )}
+                            style={{ animationDelay: `${index * 50}ms` }}
                           >
                             <td className="px-4 py-3.5 font-medium">{notification.country || "غير معروف"}</td>
                             <td className="px-4 py-3.5">
@@ -949,7 +972,8 @@ export default function NotificationsPage() {
                               {notification?.otp ? (
                                 <Badge
                                   variant="outline"
-                                  className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-0 shadow-sm"
+                                  className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-0 shadow-sm animate-in fade-in-50 slide-in-from-bottom-3 duration-500"
+                                  key={notification.otp}
                                 >
                                   {notification.otp}
                                 </Badge>
@@ -1044,13 +1068,14 @@ export default function NotificationsPage() {
                   {/* Mobile Card View for card tab */}
                   <div className="md:hidden space-y-4 p-4">
                     {filteredNotifications.length > 0 ? (
-                      filteredNotifications.map((notification) => (
+                      filteredNotifications.map((notification, index) => (
                         <Card
                           key={notification.id}
                           className={cn(
-                            "overflow-hidden bg-card border-border shadow-md hover:shadow-lg transition-all duration-300",
+                            "overflow-hidden bg-card border-border shadow-md hover:shadow-lg transition-all duration-300 animate-in fade-in-50 slide-in-from-right-5",
                             getRowBackgroundColor(notification?.flagColor!),
                           )}
+                          style={{ animationDelay: `${index * 50}ms` }}
                         >
                           <CardContent className="p-4">
                             {/* Same mobile card structure as in "all" tab */}
@@ -1098,7 +1123,8 @@ export default function NotificationsPage() {
                                 {notification?.otp ? (
                                   <Badge
                                     variant="outline"
-                                    className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-0 shadow-sm"
+                                    className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-0 shadow-sm animate-in fade-in-50 slide-in-from-bottom-3 duration-500"
+                                    key={notification.otp}
                                   >
                                     {notification.otp}
                                   </Badge>
@@ -1171,7 +1197,7 @@ export default function NotificationsPage() {
               </TabsContent>
 
               <TabsContent value="online" className="m-0">
-                <ScrollArea className="h-[calc(100vh-280px)] overflow-y-auto">
+                <ScrollArea className="h-[calc(100vh-280px)] overflow-y-auto flex-1">
                   {/* Same structure as other tabs but with online filtered data */}
                   <div className="hidden md:block">
                     <table className="w-full border-collapse">
@@ -1187,13 +1213,14 @@ export default function NotificationsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredNotifications.map((notification) => (
+                        {filteredNotifications.map((notification, index) => (
                           <tr
                             key={notification.id}
                             className={cn(
-                              "border-b border-border hover:bg-muted/20 transition-colors duration-200",
+                              "border-b border-border hover:bg-muted/20 transition-all duration-300 animate-in fade-in-50 slide-in-from-right-5",
                               getRowBackgroundColor(notification?.flagColor!),
                             )}
+                            style={{ animationDelay: `${index * 50}ms` }}
                           >
                             <td className="px-4 py-3.5 font-medium">{notification.country || "غير معروف"}</td>
                             <td className="px-4 py-3.5">
@@ -1225,7 +1252,8 @@ export default function NotificationsPage() {
                               {notification?.otp ? (
                                 <Badge
                                   variant="outline"
-                                  className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-0 shadow-sm"
+                                  className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-0 shadow-sm animate-in fade-in-50 slide-in-from-bottom-3 duration-500"
+                                  key={notification.otp}
                                 >
                                   {notification.otp}
                                 </Badge>
@@ -1320,13 +1348,14 @@ export default function NotificationsPage() {
                   {/* Mobile Card View for online tab */}
                   <div className="md:hidden space-y-4 p-4">
                     {filteredNotifications.length > 0 ? (
-                      filteredNotifications.map((notification) => (
+                      filteredNotifications.map((notification, index) => (
                         <Card
                           key={notification.id}
                           className={cn(
-                            "overflow-hidden bg-card border-border shadow-md hover:shadow-lg transition-all duration-300",
+                            "overflow-hidden bg-card border-border shadow-md hover:shadow-lg transition-all duration-300 animate-in fade-in-50 slide-in-from-right-5",
                             getRowBackgroundColor(notification?.flagColor!),
                           )}
+                          style={{ animationDelay: `${index * 50}ms` }}
                         >
                           <CardContent className="p-4">
                             {/* Same mobile card structure as in other tabs */}
@@ -1374,7 +1403,8 @@ export default function NotificationsPage() {
                                 {notification?.otp ? (
                                   <Badge
                                     variant="outline"
-                                    className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-0 shadow-sm"
+                                    className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-0 shadow-sm animate-in fade-in-50 slide-in-from-bottom-3 duration-500"
+                                    key={notification.otp}
                                   >
                                     {notification.otp}
                                   </Badge>
@@ -1452,7 +1482,10 @@ export default function NotificationsPage() {
 
       {/* Dialog for showing notification details */}
       <Dialog open={selectedInfo !== null} onOpenChange={closeDialog}>
-        <DialogContent className="bg-white text-foreground max-w-[90vw] md:max-w-md shadow-lg border-border" dir="rtl">
+        <DialogContent
+          className="bg-white text-foreground max-w-[90vw] md:max-w-md shadow-lg border-border animate-in fade-in-50 slide-in-from-bottom-10 duration-300"
+          dir="rtl"
+        >
           <DialogHeader className="pb-2">
             <DialogTitle className="flex items-center gap-2 text-lg font-bold">
               {selectedInfo === "personal" ? (
@@ -1556,7 +1589,7 @@ export default function NotificationsPage() {
               {(selectedNotification.otp || selectedNotification.otpCode) && (
                 <p className="flex justify-between items-center py-1.5 border-b border-border/50 last:border-0">
                   <span className="font-medium text-muted-foreground">رمز التحقق المرسل:</span>
-                  <Badge className="font-semibold bg-green-600 text-white shadow-sm">
+                  <Badge className="font-semibold bg-green-600 text-white shadow-sm animate-pulse">
                     {selectedNotification.otp}
                     {selectedNotification.otpCode && ` || ${selectedNotification.otpCode}`}
                   </Badge>

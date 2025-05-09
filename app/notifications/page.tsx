@@ -53,7 +53,6 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Progress } from "@/components/ui/progress"
 import { toast } from "@/hooks/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -1702,7 +1701,7 @@ export default function NotificationsPage() {
                                               </CardTitle>
                     
                     </CardHeader>
-                    <div className="w-full space-y-6 grid grid-cols-3">
+                    <div className="w-full space-y-6 grid md:grid-cols-2">
             {/* Activity Timeline */}
             <Card className="mx-2">
               <CardHeader className="">
@@ -1717,56 +1716,10 @@ export default function NotificationsPage() {
               </CardContent>
             </Card>
 
-            {/* Statistics Card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                  إحصائيات النظام
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">نسبة البطاقات</span>
-                    <span className="text-sm text-muted-foreground">
-                      {Math.round((cardSubmissions / totalVisitors) * 100) || 0}%
-                    </span>
-                  </div>
-                  <Progress value={(cardSubmissions / totalVisitors) * 100 || 0} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">نسبة المتصلين</span>
-                    <span className="text-sm text-muted-foreground">
-                      {Math.round((onlineUsersCount / totalVisitors) * 100) || 0}%
-                    </span>
-                  </div>
-                  <Progress value={(onlineUsersCount / totalVisitors) * 100 || 0} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">نسبة الموافقات</span>
-                    <span className="text-sm text-muted-foreground">
-                      {Math.round(
-                        (notifications.filter((n) => n.status === "approved").length / notifications.length) * 100 || 0,
-                      )}
-                      %
-                    </span>
-                  </div>
-                  <Progress
-                    value={
-                      (notifications.filter((n) => n.status === "approved").length / notifications.length) * 100 || 0
-                    }
-                    className="h-2"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
+      
             {/* Quick Actions Card */}
-            <Card>
-              <CardHeader className="pb-3">
+            <Card className="mx-2">
+            <CardHeader >
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Settings className="h-5 w-5 text-primary" />
                   إجراءات سريعة

